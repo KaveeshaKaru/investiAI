@@ -9,12 +9,35 @@ import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import CasesResult from "./cases-result"
+
+type Case = {
+    id: string
+    caseId: string
+    courtOrderDate: string
+    courtLocation: string
+    victimStatement: string
+    plaintiffAge: string
+    plaintiffGender: string
+    perpetratorStatement: string
+    defendantAge: string
+    defendantGender: string
+    chargeOffense: string
+    courtRuling: string
+    sentenceFine: string
+    courtAction: string
+    evidenceSummary: string
+    status: "closed" | "pending" | "active"
+    recurrence: string
+    documentId: string
+}
 
 export default function DocumentUploader() {
   const [files, setFiles] = useState<File[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [uploadStatus, setUploadStatus] = useState<Record<string, "idle" | "uploading" | "success" | "error">>({})
+  const [cases, setCases] = useState<Case[]>([])
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -43,6 +66,7 @@ export default function DocumentUploader() {
   const handleFiles = (fileList: FileList) => {
     const newFiles = Array.from(fileList)
     setFiles((prev) => [...prev, ...newFiles])
+    setCases([])
 
     // Initialize progress and status for each file
     newFiles.forEach((file) => {
@@ -51,27 +75,53 @@ export default function DocumentUploader() {
     })
   }
 
-  const uploadFiles = () => {
-    files.forEach((file) => {
-      if (uploadStatus[file.name] === "idle") {
-        simulateUpload(file)
-      }
+  const uploadFiles = async () => {
+    setUploadStatus((prev) => ({ ...prev, [files[0].name]: "uploading" }))
+    setUploadProgress((prev) => ({ ...prev, [files[0].name]: 0 }))
+
+    const formData = new FormData()
+    formData.append("file", files[0])
+
+    const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
     })
-  }
 
-  const simulateUpload = (file: File) => {
-    setUploadStatus((prev) => ({ ...prev, [file.name]: "uploading" }))
+    if (response.ok) {
+        const data = await response.json()
+        const newCases: Case[] = data.court_orders.map((order: any, index: number) => ({
+            id: `case-${index + 1}`,
+            caseId: order["Case ID"],
+            courtOrderDate: order["Court Order Date"],
+            courtLocation: order["Court Location"],
+            victimStatement: order["Victim_Statement"],
+            plaintiffAge: order["Plaintiff Age"],
+            plaintiffGender: order["Plaintiff Gender"],
+            perpetratorStatement: order["Perpetrator_Statement"],
+            defendantAge: order["Defendant Age"],
+            defendantGender: order["Defendant Gender"],
+            chargeOffense: order["Charge/Offense"],
+            courtRuling: order["Court Ruling"],
+            sentenceFine: order["Sentence/Fine"],
+            courtAction: order["Court Action"],
+            evidenceSummary: order["Evidence_Summary"],
+            status: order["Status"].toLowerCase(),
+            recurrence: order["Recurrence"],
+            documentId: `doc-${index + 1}`,
+        }))
 
-    let progress = 0
-    const interval = setInterval(() => {
-      progress += Math.random() * 10
-      if (progress >= 100) {
-        progress = 100
-        clearInterval(interval)
-        setUploadStatus((prev) => ({ ...prev, [file.name]: "success" }))
-      }
-      setUploadProgress((prev) => ({ ...prev, [file.name]: progress }))
-    }, 300)
+        setCases(newCases)
+
+        const existingCases = JSON.parse(localStorage.getItem("cases") || "[]")
+        const allCases = [...existingCases, ...newCases]
+        localStorage.setItem("cases", JSON.stringify(allCases))
+
+        setUploadStatus((prev) => ({ ...prev, [files[0].name]: "success" }))
+        setUploadProgress((prev) => ({ ...prev, [files[0].name]: 100 }))
+
+    } else {
+        setUploadStatus((prev) => ({ ...prev, [files[0].name]: "error" }))
+    }
   }
 
   const removeFile = (fileName: string) => {
@@ -251,108 +301,18 @@ export default function DocumentUploader() {
                     id="url"
                     type="url"
                     placeholder="https://example.com/document.pdf"
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
                   />
-                </div>
-                <div className="grid gap-2">
-                  <label htmlFor="document-type" className="text-sm font-medium text-gray-700">
-                    Document Type
-                  </label>
-                  <select
-                    id="document-type"
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">Select document type</option>
-                    <option value="police-report">Police Report</option>
-                    <option value="witness-statement">Witness Statement</option>
-                    <option value="court-order">Court Order</option>
-                    <option value="evidence-log">Evidence Log</option>
-                    <option value="other">Other</option>
-                  </select>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between border-t border-gray-200 pt-6">
-              <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900">
-                Cancel
-              </Button>
-              <Button className="bg-blue-600 text-white hover:bg-blue-700">Import Document</Button>
+            <CardFooter className="border-t border-gray-200 pt-6">
+              <Button className="ml-auto bg-blue-600 text-white hover:bg-blue-700">Process URL</Button>
             </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>
-
-      <Card className="bg-white border-gray-200">
-        <CardHeader>
-          <CardTitle className="text-gray-900">Processing Features</CardTitle>
-          <CardDescription className="text-gray-600">
-            Select which information to extract from your documents
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M14 4v10.54a4 4 0 1 1-4-4" />
-                </svg>
-              </div>
-              <h3 className="mb-1 font-medium text-gray-900">OCR Text Extraction</h3>
-              <p className="text-sm text-gray-600">Extract text from images and scanned documents</p>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-purple-600">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-              </div>
-              <h3 className="mb-1 font-medium text-gray-900">Entity Recognition</h3>
-              <p className="text-sm text-gray-600">Identify people, locations, dates, and other key information</p>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M12 3v12" />
-                  <path d="m8 11 4 4 4-4" />
-                  <path d="M8 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-4" />
-                </svg>
-              </div>
-              <h3 className="mb-1 font-medium text-gray-900">Data Structuring</h3>
-              <p className="text-sm text-gray-600">Convert unstructured text into structured, searchable data</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {cases.length > 0 && <CasesResult cases={cases} />}
     </div>
   )
 }
