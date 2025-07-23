@@ -18,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import Link from "next/link"
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -735,6 +736,111 @@ const SidebarMenuSubButton = React.forwardRef<
 })
 SidebarMenuSubButton.displayName = "SidebarMenuSubButton"
 
+const SidebarNav = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => {
+  return (
+    <div ref={ref} className={cn("flex flex-col", className)} {...props} />
+  )
+})
+SidebarNav.displayName = "SidebarNav"
+
+const SidebarNavMain = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => {
+  return (
+    <div
+      ref={ref}
+      className={cn("flex flex-col pt-4", className)}
+      {...props}
+    />
+  )
+})
+SidebarNavMain.displayName = "SidebarNavMain"
+
+type SidebarNavLinkProps = React.ComponentProps<typeof Link> & {
+  icon?: React.ReactNode
+  active?: boolean
+}
+
+const SidebarNavLink = React.forwardRef<
+  HTMLAnchorElement,
+  SidebarNavLinkProps
+>(({ href, active, icon, className, children, ...props }, ref) => {
+  const { state } = useSidebar()
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Link
+          href={href}
+          ref={ref}
+          className={cn(
+            "flex items-center text-sm font-medium rounded-lg p-3",
+            "text-muted-foreground/80 hover:bg-muted/80",
+            state === "collapsed" && "justify-center",
+            active && "bg-muted text-foreground",
+            className
+          )}
+          {...props}
+        >
+          {icon && <div className="mr-3">{icon}</div>}
+          <span className={cn(state === "collapsed" && "sr-only")}>
+            {children}
+          </span>
+        </Link>
+      </TooltipTrigger>
+      <TooltipContent
+        side="right"
+        className={cn(state === "expanded" && "hidden")}
+      >
+        {children}
+      </TooltipContent>
+    </Tooltip>
+  )
+})
+SidebarNavLink.displayName = "SidebarNavLink"
+
+const SidebarNavHeader = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, children, ...props }, ref) => {
+  const { state } = useSidebar()
+  return (
+    <div ref={ref} className={cn("p-3", className)} {...props}>
+      <div className="flex items-center">
+        <div
+          className={cn(
+            "flex items-center gap-3",
+            state === "collapsed" && "hidden"
+          )}
+        >
+          {children}
+        </div>
+        <div className={cn(state === "expanded" && "hidden")}>
+          <Skeleton className="h-6 w-6" />
+        </div>
+      </div>
+    </div>
+  )
+})
+SidebarNavHeader.displayName = "SidebarNavHeader"
+
+const SidebarNavHeaderTitle = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => {
+  return (
+    <div
+      ref={ref}
+      className={cn("text-xs uppercase text-muted-foreground", className)}
+      {...props}
+    />
+  )
+})
+SidebarNavHeaderTitle.displayName = "SidebarNavHeaderTitle"
+
 export {
   Sidebar,
   SidebarContent,
@@ -760,4 +866,9 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
+  SidebarNav,
+  SidebarNavMain,
+  SidebarNavLink,
+  SidebarNavHeader,
+  SidebarNavHeaderTitle,
 }

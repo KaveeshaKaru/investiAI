@@ -1,13 +1,13 @@
 import type { Metadata } from "next"
-import CasesTable from "@/components/cases-table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import PoliceReportsTable from "@/components/police-reports-table"
 
 export const metadata: Metadata = {
-  title: "Cases | InvestiDoc AI",
-  description: "View and manage all case data extracted from court documents",
+  title: "Police Reports | InvestiDoc AI",
+  description: "View and manage all data extracted from police reports",
 }
 
-export default function CasesPage() {
+export default function PoliceReportsPage() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <header className="border-b border-gray-200 bg-white shadow-sm">
@@ -36,10 +36,10 @@ export default function CasesPage() {
             <a href="/" className="text-sm font-medium text-gray-600 transition-colors hover:text-blue-600">
               Dashboard
             </a>
-            <a href="/cases" className="text-sm font-medium text-blue-600">
+            <a href="/cases" className="text-sm font-medium text-gray-600 transition-colors hover:text-blue-600">
               Cases
             </a>
-            <a href="/police-reports" className="text-sm font-medium text-gray-600 transition-colors hover:text-blue-600">
+            <a href="/police-reports" className="text-sm font-medium text-blue-600">
               Police Reports
             </a>
           </nav>
@@ -72,19 +72,19 @@ export default function CasesPage() {
       <main className="flex-1">
         <div className="container grid items-start gap-6 px-4 py-6 md:px-6 md:py-8">
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Cases</h1>
-            <p className="text-gray-600">View and manage all case data extracted from court documents</p>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Police Reports</h1>
+            <p className="text-gray-600">View and manage all data extracted from police reports</p>
           </div>
 
           <Card className="bg-white border-gray-200">
             <CardHeader>
-              <CardTitle className="text-gray-900">Case Database</CardTitle>
+              <CardTitle className="text-gray-900">Police Report Database</CardTitle>
               <CardDescription className="text-gray-600">
-                All extracted court order data with detailed case information
+                All extracted police report data with detailed information
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <CasesTable />
+                <PoliceReportsTable />
             </CardContent>
           </Card>
         </div>

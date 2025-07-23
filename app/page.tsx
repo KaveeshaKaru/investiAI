@@ -35,20 +35,14 @@ export default function Home() {
             <span className="text-xl font-bold text-gray-900">InvestiDoc AI</span>
           </div>
           <nav className="hidden md:flex md:gap-6">
-            <a href="#" className="text-sm font-medium text-blue-600">
+            <a href="/" className="text-sm font-medium text-blue-600">
               Dashboard
             </a>
             <a href="/cases" className="text-sm font-medium text-gray-600 transition-colors hover:text-blue-600">
               Cases
             </a>
-            <a href="#" className="text-sm font-medium text-gray-600 transition-colors hover:text-blue-600">
-              Documents
-            </a>
-            <a href="#" className="text-sm font-medium text-gray-600 transition-colors hover:text-blue-600">
-              Analytics
-            </a>
-            <a href="#" className="text-sm font-medium text-gray-600 transition-colors hover:text-blue-600">
-              Settings
+            <a href="/police-reports" className="text-sm font-medium text-gray-600 transition-colors hover:text-blue-600">
+              Police Reports
             </a>
           </nav>
           <div className="flex items-center gap-4">

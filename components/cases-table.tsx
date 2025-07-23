@@ -127,17 +127,17 @@ export default function CasesTable() {
       )
     })
     .sort((a, b) => {
-      const aValue = a[sortField]
-      const bValue = b[sortField]
+    const aValue = a[sortField]
+    const bValue = b[sortField]
 
-      if (aValue < bValue) {
-        return sortDirection === "asc" ? -1 : 1
-      }
-      if (aValue > bValue) {
-        return sortDirection === "asc" ? 1 : -1
-      }
-      return 0
-    })
+    if (aValue < bValue) {
+      return sortDirection === "asc" ? -1 : 1
+    }
+    if (aValue > bValue) {
+      return sortDirection === "asc" ? 1 : -1
+    }
+    return 0
+  })
 
   const paginatedCases = filteredCases.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
@@ -220,31 +220,31 @@ export default function CasesTable() {
           <TableHeader>
             <TableRow className="border-b border-gray-200 bg-gray-50">
               <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">
-                <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("caseId")}>
-                  Case ID
-                  <ArrowUpDown className="h-4 w-4" />
-                </div>
+                  <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("caseId")}>
+                    Case ID
+                    <ArrowUpDown className="h-4 w-4" />
+                  </div>
               </TableHead>
               <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">
-                <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("courtOrderDate")}>
-                  Date
-                  <ArrowUpDown className="h-4 w-4" />
-                </div>
+                  <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("courtOrderDate")}>
+                    Date
+                    <ArrowUpDown className="h-4 w-4" />
+                  </div>
               </TableHead>
               <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">
-                Court Location
+                  Court Location
               </TableHead>
               <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">
-                <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("chargeOffense")}>
-                  Charge/Offense
-                  <ArrowUpDown className="h-4 w-4" />
-                </div>
+                  <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("chargeOffense")}>
+                    Charge/Offense
+                    <ArrowUpDown className="h-4 w-4" />
+                  </div>
               </TableHead>
               <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">
-                <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("status")}>
-                  Status
-                  <ArrowUpDown className="h-4 w-4" />
-                </div>
+                  <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("status")}>
+                    Status
+                    <ArrowUpDown className="h-4 w-4" />
+                  </div>
               </TableHead>
               <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</TableHead>
             </TableRow>
@@ -271,7 +271,7 @@ export default function CasesTable() {
                     </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap px-4 py-4 text-sm">
-                    <Dialog>
+                      <Dialog>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
@@ -285,7 +285,7 @@ export default function CasesTable() {
                             <DropdownMenuItem>
                               <Eye className="mr-2 h-4 w-4" /> View Details
                             </DropdownMenuItem>
-                          </DialogTrigger>
+                        </DialogTrigger>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => setEditingCase(c)}>
                             <Edit className="mr-2 h-4 w-4" /> Edit Case
@@ -296,128 +296,128 @@ export default function CasesTable() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                       <DialogContent className="sm:max-w-4xl">
-                        <DialogHeader>
+                          <DialogHeader>
                           <DialogTitle>Case Details: {c.caseId}</DialogTitle>
                           <DialogDescription>
                             Full details for case {c.caseId}, recorded on{" "}
                             {new Date(c.courtOrderDate).toLocaleDateString()}.
-                          </DialogDescription>
-                        </DialogHeader>
+                            </DialogDescription>
+                          </DialogHeader>
                         <Tabs defaultValue="summary" className="w-full">
-                          <TabsList className="bg-gray-100 grid w-full grid-cols-3">
+                            <TabsList className="bg-gray-100 grid w-full grid-cols-3">
                             <TabsTrigger value="summary">Case Details</TabsTrigger>
-                            <TabsTrigger value="parties">Involved Parties</TabsTrigger>
-                            <TabsTrigger value="evidence">Evidence & Statements</TabsTrigger>
+                              <TabsTrigger value="parties">Involved Parties</TabsTrigger>
+                              <TabsTrigger value="evidence">Evidence & Statements</TabsTrigger>
                             <TabsTrigger value="document">Document</TabsTrigger>
-                          </TabsList>
+                            </TabsList>
 
                           <TabsContent value="summary" className="mt-4 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="rounded-md border border-gray-200 p-4">
-                                <h3 className="text-sm font-medium text-gray-600 mb-2">Case Information</h3>
-                                <div className="space-y-2">
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Case ID:</span>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="rounded-md border border-gray-200 p-4">
+                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Case Information</h3>
+                                  <div className="space-y-2">
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Case ID:</span>
                                     <span className="text-sm font-medium text-gray-900">{c.caseId}</span>
-                                  </div>
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Court Location:</span>
+                                    </div>
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Court Location:</span>
                                     <span className="text-sm text-gray-900">{c.courtLocation}</span>
-                                  </div>
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Court Order Date:</span>
-                                    <span className="text-sm text-gray-900">
+                                    </div>
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Court Order Date:</span>
+                                      <span className="text-sm text-gray-900">
                                       {new Date(c.courtOrderDate).toLocaleDateString()}
-                                    </span>
-                                  </div>
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Charge/Offense:</span>
+                                      </span>
+                                    </div>
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Charge/Offense:</span>
                                     <span className="text-sm text-gray-900">{c.chargeOffense}</span>
-                                  </div>
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Court Ruling:</span>
+                                    </div>
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Court Ruling:</span>
                                     <span className="text-sm text-gray-900">{c.courtRuling}</span>
-                                  </div>
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Court Action:</span>
+                                    </div>
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Court Action:</span>
                                     <span className="text-sm text-gray-900">{c.courtAction}</span>
-                                  </div>
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Status:</span>
-                                    <span className="text-sm flex items-center gap-1 text-gray-900">
+                                    </div>
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Status:</span>
+                                      <span className="text-sm flex items-center gap-1 text-gray-900">
                                       {getStatusIcon(c.status)}
                                       {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
-                                    </span>
-                                  </div>
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Recurrence:</span>
+                                      </span>
+                                    </div>
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Recurrence:</span>
                                     <span className="text-sm text-gray-900">{c.recurrence}</span>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
 
-                              <div className="rounded-md border border-gray-200 p-4">
-                                <h3 className="text-sm font-medium text-gray-600 mb-2">Sentencing Information</h3>
-                                <div className="space-y-2">
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Sentence/Fine:</span>
+                                <div className="rounded-md border border-gray-200 p-4">
+                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Sentencing Information</h3>
+                                  <div className="space-y-2">
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Sentence/Fine:</span>
                                     <span className="text-sm text-gray-900">{c.sentenceFine}</span>
-                                  </div>
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Document ID:</span>
+                                    </div>
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Document ID:</span>
                                     <span className="text-sm text-gray-900">{c.documentId}</span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          </TabsContent>
+                            </TabsContent>
 
-                          <TabsContent value="parties" className="mt-4 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="rounded-md border border-gray-200 p-4">
-                                <h3 className="text-sm font-medium text-gray-600 mb-2">Plaintiff Information</h3>
-                                <div className="space-y-2">
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Age:</span>
+                            <TabsContent value="parties" className="mt-4 space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="rounded-md border border-gray-200 p-4">
+                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Plaintiff Information</h3>
+                                  <div className="space-y-2">
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Age:</span>
                                     <span className="text-sm text-gray-900">{c.plaintiffAge}</span>
-                                  </div>
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Gender:</span>
+                                    </div>
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Gender:</span>
                                     <span className="text-sm text-gray-900">{c.plaintiffGender}</span>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
 
-                              <div className="rounded-md border border-gray-200 p-4">
-                                <h3 className="text-sm font-medium text-gray-600 mb-2">Defendant Information</h3>
-                                <div className="space-y-2">
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Age:</span>
+                                <div className="rounded-md border border-gray-200 p-4">
+                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Defendant Information</h3>
+                                  <div className="space-y-2">
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Age:</span>
                                     <span className="text-sm text-gray-900">{c.defendantAge}</span>
-                                  </div>
-                                  <div className="grid grid-cols-2">
-                                    <span className="text-sm text-gray-600">Gender:</span>
+                                    </div>
+                                    <div className="grid grid-cols-2">
+                                      <span className="text-sm text-gray-600">Gender:</span>
                                     <span className="text-sm text-gray-900">{c.defendantGender}</span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          </TabsContent>
+                            </TabsContent>
 
-                          <TabsContent value="evidence" className="mt-4 space-y-4">
-                            <div className="space-y-4">
-                              <div className="rounded-md border border-gray-200 p-4">
-                                <h3 className="text-sm font-medium text-gray-600 mb-2">Victim Statement</h3>
+                            <TabsContent value="evidence" className="mt-4 space-y-4">
+                              <div className="space-y-4">
+                                <div className="rounded-md border border-gray-200 p-4">
+                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Victim Statement</h3>
                                 <p className="text-sm text-gray-900">{c.victimStatement}</p>
-                              </div>
+                                </div>
 
-                              <div className="rounded-md border border-gray-200 p-4">
-                                <h3 className="text-sm font-medium text-gray-600 mb-2">Perpetrator Statement</h3>
+                                <div className="rounded-md border border-gray-200 p-4">
+                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Perpetrator Statement</h3>
                                 <p className="text-sm text-gray-900">{c.perpetratorStatement}</p>
-                              </div>
+                                </div>
 
-                              <div className="rounded-md border border-gray-200 p-4">
-                                <h3 className="text-sm font-medium text-gray-600 mb-2">Evidence Summary</h3>
+                                <div className="rounded-md border border-gray-200 p-4">
+                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Evidence Summary</h3>
                                 <p className="text-sm text-gray-900">{c.evidenceSummary}</p>
                               </div>
                             </div>
@@ -437,10 +437,10 @@ export default function CasesTable() {
                                 </div>
                               </CardContent>
                             </Card>
-                          </TabsContent>
-                        </Tabs>
-                      </DialogContent>
-                    </Dialog>
+                            </TabsContent>
+                          </Tabs>
+                        </DialogContent>
+                      </Dialog>
                   </TableCell>
                 </TableRow>
               ))
@@ -498,8 +498,8 @@ export default function CasesTable() {
                     <div className="space-y-2">
                       <Label htmlFor="sentenceFine">Sentence/Fine</Label>
                       <Input id="sentenceFine" name="sentenceFine" value={editingCase.sentenceFine} onChange={handleEditChange} />
-                    </div>
-                  </div>
+        </div>
+      </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="courtAction">Court Action</Label>

@@ -10,26 +10,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import CasesResult from "./cases-result"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CourtCase, PoliceReport } from "@/lib/types"
 
-type Case = {
-    id: string
-    caseId: string
-    courtOrderDate: string
-    courtLocation: string
-    victimStatement: string
-    plaintiffAge: string
-    plaintiffGender: string
-    perpetratorStatement: string
-    defendantAge: string
-    defendantGender: string
-    chargeOffense: string
-    courtRuling: string
-    sentenceFine: string
-    courtAction: string
-    evidenceSummary: string
-    status: "closed" | "pending" | "active"
-    recurrence: string
-    documentId: string
+type ExtractedData = {
+  courtOrders: CourtCase[]
+  policeReports: PoliceReport[]
 }
 
 export default function DocumentUploader() {
@@ -37,7 +23,8 @@ export default function DocumentUploader() {
   const [isDragging, setIsDragging] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [uploadStatus, setUploadStatus] = useState<Record<string, "idle" | "uploading" | "success" | "error">>({})
-  const [cases, setCases] = useState<Case[]>([])
+  const [extractedData, setExtractedData] = useState<ExtractedData>({ courtOrders: [], policeReports: [] })
+  const [docType, setDocType] = useState<"courtOrder" | "policeReport">("courtOrder")
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -66,7 +53,7 @@ export default function DocumentUploader() {
   const handleFiles = (fileList: FileList) => {
     const newFiles = Array.from(fileList)
     setFiles((prev) => [...prev, ...newFiles])
-    setCases([])
+    setExtractedData({ courtOrders: [], policeReports: [] })
 
     // Initialize progress and status for each file
     newFiles.forEach((file) => {
@@ -81,6 +68,7 @@ export default function DocumentUploader() {
 
     const formData = new FormData()
     formData.append("file", files[0])
+    formData.append("docType", docType)
 
     const response = await fetch("/api/upload", {
         method: "POST",
@@ -89,32 +77,23 @@ export default function DocumentUploader() {
 
     if (response.ok) {
         const data = await response.json()
-        const newCases: Case[] = data.court_orders.map((order: any, index: number) => ({
-            id: `case-${index + 1}`,
-            caseId: order["Case ID"],
-            courtOrderDate: order["Court Order Date"],
-            courtLocation: order["Court Location"],
-            victimStatement: order["Victim_Statement"],
-            plaintiffAge: order["Plaintiff Age"],
-            plaintiffGender: order["Plaintiff Gender"],
-            perpetratorStatement: order["Perpetrator_Statement"],
-            defendantAge: order["Defendant Age"],
-            defendantGender: order["Defendant Gender"],
-            chargeOffense: order["Charge/Offense"],
-            courtRuling: order["Court Ruling"],
-            sentenceFine: order["Sentence/Fine"],
-            courtAction: order["Court Action"],
-            evidenceSummary: order["Evidence_Summary"],
-            status: order["Status"].toLowerCase(),
-            recurrence: order["Recurrence"],
-            documentId: `doc-${index + 1}`,
-        }))
+        
+        if (docType === 'courtOrder') {
+          const newCases: CourtCase[] = data.cases
+          setExtractedData(prev => ({...prev, courtOrders: newCases}))
 
-        setCases(newCases)
+          const existingCases = JSON.parse(localStorage.getItem("cases") || "[]")
+          const allCases = [...existingCases, ...newCases]
+          localStorage.setItem("cases", JSON.stringify(allCases))
 
-        const existingCases = JSON.parse(localStorage.getItem("cases") || "[]")
-        const allCases = [...existingCases, ...newCases]
-        localStorage.setItem("cases", JSON.stringify(allCases))
+        } else if (docType === 'policeReport') {
+            const newReports: PoliceReport[] = data.cases
+            setExtractedData(prev => ({...prev, policeReports: newReports}))
+
+            const existingReports = JSON.parse(localStorage.getItem("police-reports") || "[]")
+            const allReports = [...existingReports, ...newReports]
+            localStorage.setItem("police-reports", JSON.stringify(allReports))
+        }
 
         setUploadStatus((prev) => ({ ...prev, [files[0].name]: "success" }))
         setUploadProgress((prev) => ({ ...prev, [files[0].name]: 100 }))
@@ -176,6 +155,17 @@ export default function DocumentUploader() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+               <div className="mb-4">
+                  <Select value={docType} onValueChange={(value) => setDocType(value as "courtOrder" | "policeReport")}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select document type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="courtOrder">Court Order</SelectItem>
+                      <SelectItem value="policeReport">Police Report</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               <div
                 className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-colors ${
                   isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-gray-50 hover:bg-gray-100"
@@ -312,7 +302,11 @@ export default function DocumentUploader() {
           </Card>
         </TabsContent>
       </Tabs>
-      {cases.length > 0 && <CasesResult cases={cases} />}
+      { (extractedData.courtOrders.length > 0 || extractedData.policeReports.length > 0) && (
+        <div className="mt-6">
+            <CasesResult cases={extractedData.courtOrders} policeReports={extractedData.policeReports} docType={docType} />
+        </div>
+      )}
     </div>
   )
 }
