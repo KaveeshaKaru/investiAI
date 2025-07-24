@@ -505,6 +505,12 @@ export default function PoliceReportsTable() {
                       <Input id="caseId" name="caseId" value={editingReport.caseId} onChange={handleEditChange} />
                     </div>
                     <div className="space-y-2">
+                      <Label htmlFor="reportDate">Report Date</Label>
+                      <Input id="reportDate" name="reportDate" value={editingReport.reportDate} onChange={handleEditChange} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       <Label htmlFor="incidentDate">Incident Date</Label>
                       <Input
                         id="incidentDate"
@@ -513,11 +519,16 @@ export default function PoliceReportsTable() {
                         onChange={handleEditChange}
                       />
                     </div>
-                  </div>
-                   <div className="space-y-2">
-                      <Label htmlFor="reportDate">Report Date</Label>
-                      <Input id="reportDate" name="reportDate" value={editingReport.reportDate} onChange={handleEditChange} />
+                    <div className="space-y-2">
+                      <Label htmlFor="incidentTime">Incident Time</Label>
+                      <Input
+                        id="incidentTime"
+                        name="incidentTime"
+                        value={editingReport.incidentTime || ""}
+                        onChange={handleEditChange}
+                      />
                     </div>
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -624,6 +635,16 @@ export default function PoliceReportsTable() {
                             name="relationshipToVictim"
                             value={editingReport.relationshipToVictim}
                             onChange={handleEditChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="priorCriminalHistory">Prior Criminal History</Label>
+                          <Textarea
+                            id="priorCriminalHistory"
+                            name="priorCriminalHistory"
+                            value={editingReport.priorCriminalHistory || ""}
+                            onChange={handleEditChange}
+                            rows={3}
                           />
                         </div>
                     </CardContent>

@@ -3,7 +3,7 @@ import CasesTable from "@/components/cases-table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export const metadata: Metadata = {
-  title: "Cases | InvestiDoc AI",
+  title: "Cases | Lexa AI",
   description: "View and manage all case data extracted from court documents",
 }
 
@@ -30,7 +30,7 @@ export default function CasesPage() {
                 <path d="M3 12v8.8c0 .3.2.6.4.8.2.2.5.4.8.4H11" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-gray-900">InvestiDoc AI</span>
+            <span className="text-xl font-bold text-gray-900">Lexa AI</span>
           </div>
           <nav className="hidden md:flex md:gap-6">
             <a href="/" className="text-sm font-medium text-gray-600 transition-colors hover:text-blue-600">
@@ -91,7 +91,7 @@ export default function CasesPage() {
       </main>
       <footer className="border-t border-gray-200 bg-gray-50 py-6 text-center text-sm text-gray-500">
         <div className="container px-4 md:px-6">
-          <p>© 2025 InvestiDoc AI. All rights reserved.</p>
+          <p>© 2025 Lexa AI. All rights reserved.</p>
         </div>
       </footer>
     </div>
