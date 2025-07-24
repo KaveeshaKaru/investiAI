@@ -90,9 +90,9 @@ export default function DocumentUploader() {
             const newReports: PoliceReport[] = data.cases
             setExtractedData(prev => ({...prev, policeReports: newReports}))
 
-            const existingReports = JSON.parse(localStorage.getItem("police-reports") || "[]")
+            const existingReports = JSON.parse(localStorage.getItem("policeReports") || "[]")
             const allReports = [...existingReports, ...newReports]
-            localStorage.setItem("police-reports", JSON.stringify(allReports))
+            localStorage.setItem("policeReports", JSON.stringify(allReports))
         }
 
         setUploadStatus((prev) => ({ ...prev, [files[0].name]: "success" }))

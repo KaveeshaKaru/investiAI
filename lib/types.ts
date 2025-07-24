@@ -23,20 +23,26 @@ export type PoliceReport = {
   id: string
   caseId: string
   incidentDate: string
+  incidentTime: string
   reportDate: string
+  victimName: string
   victimAge: string
   victimGender: string
-  victimRelationshipToPerpetrator: string
-  perpetratorAge: string
+  victimNationality: string
+  perpetratorName: string
   perpetratorGender: string
-  perpetratorRelationshipToVictim: string
+  perpetratorNationality: string
+  relationshipToVictim: string
   incidentLocation: string
+  incidentSummary: string
   typeOfViolence: string
-  severityLevel: string
+  injuryDescription: string
+  evidenceMentioned: string
   reportedToAuthorities: string
   actionTaken: string
   recurrence: string
-  outcomeOfTheCase: string
-  criminalStatus: string
+  caseStatus: string
+  relevantLaws: string
+  priorCriminalHistory: string
   documentId: string
 } 

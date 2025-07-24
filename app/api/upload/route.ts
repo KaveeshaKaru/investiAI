@@ -49,42 +49,48 @@ const courtOrderSchema = {
 };
 
 const policeReportSchema = {
-    type: "OBJECT",
-    required: ["cases"],
-    properties: {
-        cases: {
-            type: "ARRAY",
-            items: {
-                type: "OBJECT",
-                required: [
-                    "caseId", "incidentDate", "reportDate", "victimAge", "victimGender",
-                    "victimRelationshipToPerpetrator", "perpetratorAge", "perpetratorGender",
-                    "perpetratorRelationshipToVictim", "incidentLocation", "typeOfViolence",
-                    "severityLevel", "reportedToAuthorities", "actionTaken", "recurrence",
-                    "outcomeOfTheCase", "criminalStatus"
-                ],
-                properties: {
-                    caseId: { type: "string" },
-                    incidentDate: { type: "string" },
-                    reportDate: { type: "string" },
-                    victimAge: { type: "string" },
-                    victimGender: { type: "string" },
-                    victimRelationshipToPerpetrator: { type: "string" },
-                    perpetratorAge: { type: "string" },
-                    perpetratorGender: { type: "string" },
-                    perpetratorRelationshipToVictim: { type: "string" },
-                    incidentLocation: { type: "string" },
-                    typeOfViolence: { type: "string" },
-                    severityLevel: { type: "string" },
-                    reportedToAuthorities: { type: "string" },
-                    actionTaken: { type: "string" },
-                    recurrence: { type: "string" },
-                    outcomeOfTheCase: { type: "string" },
-                    criminalStatus: { type: "string" },
-                },
-            },
+  type: "OBJECT",
+  required: ["cases"],
+  properties: {
+    cases: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        required: [
+          "caseId", "incidentDate", "reportDate", "victimName", "victimAge", "victimGender",
+          "victimNationality", "perpetratorName", "perpetratorGender", "perpetratorNationality",
+          "relationshipToVictim", "incidentLocation", "incidentSummary", "typeOfViolence",
+          "injuryDescription", "evidenceMentioned", "reportedToAuthorities", "actionTaken",
+          "recurrence", "caseStatus", "relevantLaws", "incidentTime", "priorCriminalHistory"
+        ],
+        properties: {
+          caseId: { type: "string" },
+          incidentDate: { type: "string" },
+          reportDate: { type: "string" },
+          victimName: { type: "string" },
+          victimAge: { type: "string" },
+          victimGender: { type: "string" },
+          victimNationality: { type: "string" },
+          perpetratorName: { type: "string" },
+          perpetratorGender: { type: "string" },
+          perpetratorNationality: { type: "string" },
+          relationshipToVictim: { type: "string" },
+          incidentLocation: { type: "string" },
+          incidentSummary: { type: "string" },
+          typeOfViolence: { type: "string" },
+          injuryDescription: { type: "string" },
+          evidenceMentioned: { type: "string" },
+          reportedToAuthorities: { type: "string" },
+          actionTaken: { type: "string" },
+          recurrence: { type: "string" },
+          caseStatus: { type: "string" },
+          relevantLaws: { type: "string" },
+          incidentTime: { type: "string" },
+          priorCriminalHistory: { type: "string" },
         },
+      },
     },
+  },
 };
 
 const courtOrderSystemInstruction =
@@ -126,41 +132,53 @@ const courtOrderSystemInstruction =
 "Handle OCR errors (e.g., '∞', repeated '2005') by focusing on unique, meaningful data. Extract multiple court orders if present. Output all fields in English only.";
 
 const policeReportSystemInstruction =
-"You are an expert in extracting structured data from unstructured or semi-structured text in police reports. "
-"Given a file (which may be an image, PDF, DOCX, CSV, or other format) containing one or more police reports, "
-"identify and extract data into the following fields: "
-"- caseId (e.g., '2023-001', '2024-045', or '2024-059') "
-"- incidentDate (e.g., 'January 1, 2023', 'March 17, 2024') "
-"- reportDate (e.g., 'January 2, 2023', 'March 19, 2024') "
-"- victimAge (e.g., '25 years', '40', or 'Unknown') "
-"- victimGender (e.g., 'Male', 'Female', or 'Unknown') "
-"- victimRelationshipToPerpetrator (e.g., 'Partner', 'Spouse', 'Stranger', or 'Unknown') "
-"- perpetratorAge (e.g., '30 years', 'Unknown') "
-"- perpetratorGender (e.g., 'Male', 'Female', or 'Unknown') "
-"- perpetratorRelationshipToVictim (e.g., 'Spouse', 'Partner', 'Stranger', or 'Unknown') "
-"- incidentLocation (e.g., 'Colombo', 'Houston, TX', 'Main Street, Chicago') "
-"- typeOfViolence (e.g., 'Physical assault', 'Fraud (Identity Theft)', 'Hit-and-run') "
-"- severityLevel (e.g., 'Minor', 'High', 'Moderate', 'Severe', 'Life-threatening') "
-"- reportedToAuthorities (e.g., 'Yes', 'No') "
-"- actionTaken (e.g., 'Fraud report filed with bank', 'Perpetrator arrested', 'Public alert issued') "
-"- recurrence (e.g., 'First-time offense', 'Repeat offense', 'Unknown') "
-"- outcomeOfTheCase (e.g., 'Pending further investigation', 'Active Investigation', 'Dismissed') "
-"- criminalStatus (e.g., 'Criminal charges active', 'Not a Criminal', 'Unknown') "
-"The text may not follow a consistent format, and some fields may be missing, ambiguous, or in a non-English language (e.g., Sinhala). Use the following guidelines: "
-"1. For caseId, look for identifiers like 'Case No.', 'Case Number', or similar (e.g., '2024-059', '2023-001'). "
-"2. For dates, accept various formats (e.g., 'March 18, 2024', 'January 1, 2023') and distinguish between incident and report dates. If the date is in a non-English language, translate it to English (e.g., Sinhala month names to English equivalents). "
-"3. For ages, extract numerical values or phrases like '25 years'; if not specified, use 'Unknown'. "
-"4. For relationships, infer from context (e.g., 'Partner' or 'Spouse' in domestic cases, 'Stranger' in hit-and-run cases). Translate relationship terms if in a non-English language. "
-"5. For typeOfViolence, use the incident type if specified (e.g., 'Fraud (Identity Theft)', 'Physical assault', 'Hit-and-run'); otherwise, infer from the narrative. Translate if necessary. "
-"6. For severityLevel, use terms like 'Minor', 'High', or 'Severe' as specified; if unclear, infer from the narrative (e.g., 'minor leg injury' implies 'Minor'). Translate severity terms if in a non-English language. "
-"7. For reportedToAuthorities, assume 'Yes' if a police report exists, unless stated otherwise. "
-"8. For actionTaken, summarize the police response (e.g., 'Fraud report filed with bank', 'Perpetrator arrested'). Translate actions if in a non-English language. "
-"9. For recurrence, look for phrases like 'First-time offense' or infer from context; use 'Unknown' if unclear. Translate recurrence terms if necessary. "
-"10. For outcomeOfTheCase, use terms like 'Active Investigation', 'Pending', or 'Dismissed' based on the case status. Translate if in a non-English language. "
-"11. For criminalStatus, infer from context (e.g., 'Criminal charges active' if charges are mentioned). Translate if necessary. "
-"12. If the report is in a non-English language (e.g., Sinhala), translate the relevant sections to English to extract the required fields accurately. "
-"13. If multiple cases are present, extract each as a separate entry. If a field is unclear or missing, use 'Unknown'. "
-"Ensure the extracted data aligns with the provided schema and is presented in English.";
+"You are an expert in extracting structured data from unstructured or semi-structured text in police reports. Given a file (which may be an image, PDF, DOCX, CSV, or other format) containing one or more police reports, identify and extract data into the following fields:\n\n" +
+"caseId (e.g., 'WCIB 367/04', 'BR 1082/25')\n" +
+"incidentDate (e.g., 'February 27, 2025')\n" +
+"incidentTime (e.g., '10:30 AM', '14:45', or 'Unknown')\n" +
+"reportDate (e.g., 'March 1, 2025')\n" +
+"victimName (e.g., 'Alina Oslopova' or leave 'Unknown' if redacted)\n" +
+"victimAge (e.g., '25 years', or 'Unknown')\n" +
+"victimGender (e.g., 'Female', 'Male', 'Unknown')\n" +
+"victimNationality (e.g., 'Sri Lankan', 'Russian', or 'Unknown')\n" +
+"perpetratorName (e.g., include if mentioned; else 'Unknown')\n" +
+"perpetratorGender (e.g., 'Female', 'Male', 'Unknown')\n" +
+"perpetratorNationality (e.g., 'Sri Lankan', 'Russian', or 'Unknown')\n" +
+"relationshipToVictim (e.g., 'Spouse', 'Stranger', 'Friend', 'Employer', 'Unknown')\n" +
+"incidentLocation (e.g., 'No. 39/3C, Kaluwella, Galle')\n" +
+"incidentSummary (a detailed summary of the incident, including key events and context)\n" +
+"typeOfViolence (e.g., 'Physical assault', 'Verbal threat', 'Sexual harassment', 'Unknown')\n" +
+"injuryDescription (if any: e.g., 'swollen cheek', 'bleeding nose')\n" +
+"evidenceMentioned (e.g., 'Medical Report', 'CCTV footage', 'Police Scene Report')\n" +
+"reportedToAuthorities ('Yes', 'No')\n" +
+"actionTaken (e.g., 'Victim taken to hospital', 'CCTV retrieved', 'Suspect summoned')\n" +
+"recurrence (e.g., 'First-time incident', 'Repeat incident', 'Ongoing domestic violence')\n" +
+"caseStatus (e.g., 'Ongoing', 'Referred to court', 'Concluded', 'Unknown')\n" +
+"relevantLaws (e.g., 'Sri Lanka Penal Code 314, 316', or 'Children's Charter 1989')\n" +
+"priorCriminalHistory (e.g., 'No prior record', 'Convicted of theft in 2020', or 'Unknown')\n" +
+"The text may not follow a consistent format, and some fields may be missing, ambiguous, or in a non-English language (e.g., Sinhala).\n\n" +
+"Guidelines:\n" +
+"1. For caseId, look for identifiers like 'WCIB', 'MCR/', 'BR', or similar (e.g., 'WCIB 367/04', 'MCR/122/25'); if unclear, use 'Unknown'.\n" +
+"2. For incidentDate and reportDate, accept various formats (e.g., 'February 27, 2025', '2025-02-27') and distinguish between them. Translate Sinhala dates to English (e.g., 'පෙබරවාරි' to 'February').\n" +
+"3. For victimName, extract as provided (e.g., 'Alina Oslopova', 'මලිකා'); if redacted or unclear, use 'Unknown'.\n" +
+"4. For ages, extract numerical values or phrases like '25 years'; if not specified, use 'Unknown'.\n" +
+"5. For gender, identify terms like 'Male', 'Female', or Sinhala equivalents (e.g., 'මහල' for 'Male'); if unclear, use 'Unknown'.\n" +
+"6. For victimNationality and perpetratorNationality, infer from context (e.g., 'Sri Lankan' from location or name); if unclear, use 'Unknown'.\n" +
+"7. For relationshipToVictim, infer from context (e.g., 'Spouse' in domestic cases, 'Stranger' in theft); translate if in Sinhala; if unclear, use 'Unknown'.\n" +
+"8. For incidentLocation, extract full address or place (e.g., 'No. 39/3C, Kaluwella, Galle'); if unclear, use 'Unknown'.\n" +
+"9. For incidentSummary, provide a detailed English summary of the incident, including key events, actions, and context. Capture more than just the basic event; if unclear, use 'Unknown'.\n" +
+"10. For typeOfViolence, use specified terms (e.g., 'Physical assault', 'Verbal threat') or infer from narrative; translate if necessary; if unclear, use 'Unknown'.\n" +
+"11. For injuryDescription, extract any mentioned injuries (e.g., 'swollen cheek'); if none or unclear, use 'Unknown'.\n" +
+"12. For evidenceMentioned, list any evidence noted (e.g., 'Medical Report', 'CCTV footage'); if none or unclear, use 'Unknown'.\n" +
+"13. For reportedToAuthorities, assume 'Yes' if a police report exists, unless stated otherwise.\n" +
+"14. For actionTaken, summarize police response (e.g., 'Victim taken to hospital'); translate if in Sinhala; if unclear, use 'Unknown'.\n" +
+"15. For recurrence, look for phrases like 'First-time incident' or infer (e.g., 'Ongoing domestic violence'); translate if necessary; if unclear, use 'Unknown'.\n" +
+"16. For caseStatus, infer from context (e.g., 'Ongoing', 'Referred to court'); translate if necessary; if unclear, use 'Unknown'.\n" +
+"17. For relevantLaws, extract legal references (e.g., 'Sri Lanka Penal Code 314, 316'); translate if necessary; if unclear, use 'Unknown'.\n" +
+"18. For incidentTime, extract time of incident if mentioned (e.g., '10:30 AM', '14:45'); if unclear or absent, use 'Unknown'.\n" +
+"19. For priorCriminalHistory, extract any mention of past criminal records (e.g., 'No prior record', 'Convicted of theft in 2020'); if unclear or absent, use 'Unknown'.\n" +
+"20. If the report is in a non-English language (e.g., Sinhala), translate relevant sections to English for extraction.\n" +
+"21. If multiple cases are present, extract each as a separate entry. Ensure the extracted data aligns with the provided schema and is presented in English.";
 
 
 async function fileToGenerativePart(file: File) {

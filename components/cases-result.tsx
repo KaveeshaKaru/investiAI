@@ -31,7 +31,7 @@ type CasesResultProps = {
 }
 
 export default function CasesResult({ cases, policeReports, docType }: CasesResultProps) {
-  const getStatusBadge = (status: CourtCase["status"] | PoliceReport["criminalStatus"]) => {
+  const getStatusBadge = (status: CourtCase["status"] | PoliceReport["caseStatus"]) => {
     switch (status) {
       case "closed":
         return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Closed</Badge>
@@ -105,7 +105,7 @@ export default function CasesResult({ cases, policeReports, docType }: CasesResu
       <TableCell>{r.caseId}</TableCell>
       <TableCell>{r.incidentDate}</TableCell>
       <TableCell>{r.incidentLocation}</TableCell>
-      <TableCell>{getStatusBadge(r.criminalStatus)}</TableCell>
+      <TableCell>{getStatusBadge(r.caseStatus)}</TableCell>
       <TableCell>
         <Dialog>
           <DropdownMenu>
@@ -142,8 +142,8 @@ export default function CasesResult({ cases, policeReports, docType }: CasesResu
                     <div>{r.incidentLocation}</div>
                     <div className="font-semibold">Type of Violence:</div>
                     <div>{r.typeOfViolence}</div>
-                     <div className="font-semibold">Criminal Status:</div>
-                    <div>{getStatusBadge(r.criminalStatus)}</div>
+                     <div className="font-semibold">Case Status:</div>
+                    <div>{getStatusBadge(r.caseStatus)}</div>
                </div>
             </div>
           </DialogContent>
@@ -174,7 +174,7 @@ export default function CasesResult({ cases, policeReports, docType }: CasesResu
                 <TableHead>Case ID</TableHead>
                 <TableHead>Incident Date</TableHead>
                 <TableHead>Location</TableHead>
-                <TableHead>Criminal Status</TableHead>
+                <TableHead>Case Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             )}
