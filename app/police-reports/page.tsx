@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import PoliceReportsTable from "@/components/police-reports-table"
+import PredictionsTable from "@/components/predictions-table"
 
 export const metadata: Metadata = {
   title: "Police Reports | Lexa AI",
@@ -87,6 +88,10 @@ export default function PoliceReportsPage() {
                 <PoliceReportsTable />
             </CardContent>
           </Card>
+
+          <div className="mt-8">
+            <PredictionsTable />
+          </div>
         </div>
       </main>
       <footer className="border-t border-gray-200 bg-gray-50 py-6 text-center text-sm text-gray-500">
