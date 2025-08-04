@@ -17,6 +17,7 @@ import {
   Trash,
   Edit,
   HelpCircle,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -46,23 +47,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { PoliceReport } from "@/lib/types"
+import { usePoliceReports } from "@/hooks/use-police-reports"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function PoliceReportsTable() {
-  const [reports, setReports] = useState<PoliceReport[]>([])
+  const { toast } = useToast()
+  const {
+    reports,
+    loading,
+    error,
+    fetchReports,
+    updateReport,
+    deleteReport,
+  } = usePoliceReports()
+
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortField, setSortField] = useState<keyof PoliceReport>("incidentDate")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
-  const itemsPerPage = 10
   const [editingReport, setEditingReport] = useState<PoliceReport | null>(null)
+  const [viewingReport, setViewingReport] = useState<PoliceReport | null>(null)
+  const itemsPerPage = 10
 
   useEffect(() => {
-    const storedReports = localStorage.getItem("policeReports")
-    if (storedReports) {
-      setReports(JSON.parse(storedReports))
-    }
-  }, [])
+    const delayDebounceFn = setTimeout(() => {
+      fetchReports(searchTerm || undefined, statusFilter !== "all" ? statusFilter : undefined)
+    }, 300)
+
+    return () => clearTimeout(delayDebounceFn)
+  }, [searchTerm, statusFilter, fetchReports])
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (editingReport) {
@@ -82,47 +96,55 @@ export default function PoliceReportsTable() {
     }
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editingReport) {
-      const updatedReports = reports.map((r) => (r.id === editingReport.id ? editingReport : r))
-      setReports(updatedReports)
-      localStorage.setItem("policeReports", JSON.stringify(updatedReports))
-      setEditingReport(null)
+      try {
+        await updateReport(editingReport.id, editingReport)
+        toast({
+          title: "Success",
+          description: "Report updated successfully",
+        })
+        setEditingReport(null)
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update report",
+          variant: "destructive",
+        })
+      }
     }
   }
 
-  const clearReports = () => {
-    localStorage.removeItem("policeReports")
-    setReports([])
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteReport(id)
+      toast({
+        title: "Success",
+        description: "Report deleted successfully",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete report",
+        variant: "destructive",
+      })
+    }
   }
 
-  const filteredReports = reports
-    .filter((r) => {
-      if (statusFilter !== "all" && r.caseStatus !== statusFilter) {
-        return false
-      }
-      return (
-        r.caseId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.incidentLocation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.typeOfViolence.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    })
-    .sort((a, b) => {
-      const aValue = a[sortField]
-      const bValue = b[sortField]
+  const sortedReports = [...reports].sort((a, b) => {
+    const aValue = a[sortField] || ""
+    const bValue = b[sortField] || ""
+    if (aValue < bValue) return sortDirection === "asc" ? -1 : 1
+    if (aValue > bValue) return sortDirection === "asc" ? 1 : -1
+    return 0
+  })
 
-      if (aValue < bValue) {
-        return sortDirection === "asc" ? -1 : 1
-      }
-      if (aValue > bValue) {
-        return sortDirection === "asc" ? 1 : -1
-      }
-      return 0
-    })
+  const paginatedReports = sortedReports.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
-  const paginatedReports = filteredReports.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-
-  const totalPages = Math.ceil(filteredReports.length / itemsPerPage)
+  const totalPages = Math.ceil(sortedReports.length / itemsPerPage)
 
   const handleSort = (field: keyof PoliceReport) => {
     if (field === sortField) {
@@ -165,6 +187,25 @@ export default function PoliceReportsTable() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+          <p className="text-gray-600">Failed to load reports. Please try again later.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -194,53 +235,19 @@ export default function PoliceReportsTable() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button
-            variant="outline"
-            onClick={clearReports}
-            className="border-red-300 text-red-700 hover:bg-red-100 hover:text-red-900"
-          >
-            <Trash className="mr-2 h-4 w-4" />
-            Clear Reports
-          </Button>
         </div>
       </div>
+
       <div className="overflow-hidden rounded-lg border border-gray-200">
         <Table>
           <TableHeader>
             <TableRow className="border-b border-gray-200 bg-gray-50">
-              <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">
-                <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("caseId")}>
-                  Case ID
-                  <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">
-                <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("incidentDate")}>
-                  Incident Date
-                  <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">
-                <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("incidentTime")}>
-                  Incident Time
-                  <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">
-                Incident Location
-              </TableHead>
-              <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">
-                <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("typeOfViolence")}>
-                  Type of Violence
-                  <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">
-                <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort("caseStatus")}>
-                  Status
-                  <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
+              <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700" onClick={() => handleSort("caseId")}>Case ID <ArrowUpDown className="h-4 w-4 inline-block" /></TableHead>
+              <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700" onClick={() => handleSort("incidentDate")}>Incident Date <ArrowUpDown className="h-4 w-4 inline-block" /></TableHead>
+              <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">Incident Time</TableHead>
+              <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">Incident Location</TableHead>
+              <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700" onClick={() => handleSort("typeOfViolence")}>Type of Violence <ArrowUpDown className="h-4 w-4 inline-block" /></TableHead>
+              <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700" onClick={() => handleSort("caseStatus")}>Status <ArrowUpDown className="h-4 w-4 inline-block" /></TableHead>
               <TableHead className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -248,242 +255,223 @@ export default function PoliceReportsTable() {
             {paginatedReports.length > 0 ? (
               paginatedReports.map((r) => (
                 <TableRow key={r.id} className="bg-white hover:bg-gray-50">
-                  <TableCell className="whitespace-nowrap px-4 py-4 text-sm font-medium text-gray-900">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-gray-500" />
-                      {r.caseId}
-                    </div>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">
-                    {new Date(r.incidentDate).toLocaleDateString()}
-                  </TableCell>
+                  <TableCell className="whitespace-nowrap px-4 py-4 text-sm font-medium text-gray-900">{r.caseId}</TableCell>
+                  <TableCell className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{new Date(r.incidentDate).toLocaleDateString()}</TableCell>
                   <TableCell className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{r.incidentTime}</TableCell>
                   <TableCell className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{r.incidentLocation}</TableCell>
                   <TableCell className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{r.typeOfViolence}</TableCell>
+                  <TableCell className="whitespace-nowrap px-4 py-4 text-sm">{getStatusBadge(r.caseStatus)}</TableCell>
                   <TableCell className="whitespace-nowrap px-4 py-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(r.caseStatus)}
-                      {getStatusBadge(r.caseStatus)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap px-4 py-4 text-sm">
-                    <Dialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DialogTrigger asChild>
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" /> View Details
-                            </DropdownMenuItem>
-                          </DialogTrigger>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setEditingReport(r)}>
-                            <Edit className="mr-2 h-4 w-4" /> Edit Report
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <DialogContent className="sm:max-w-4xl">
-                        <DialogHeader>
-                          <DialogTitle>Report Details: {r.caseId}</DialogTitle>
-                          <DialogDescription>
-                            Full details for report {r.caseId}, recorded on{" "}
-                            {new Date(r.reportDate).toLocaleDateString()}.
-                            </DialogDescription>
-                          </DialogHeader>
-                        <Tabs defaultValue="summary" className="w-full">
-                            <TabsList className="grid w-full grid-cols-4">
-                              <TabsTrigger value="summary">Report Details</TabsTrigger>
-                              <TabsTrigger value="parties">Involved Parties</TabsTrigger>
-                              <TabsTrigger value="incident">Incident & Evidence</TabsTrigger>
-                              <TabsTrigger value="document">Document</TabsTrigger>
-                            </TabsList>
-
-                          <TabsContent value="summary" className="mt-4 space-y-4">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="rounded-md border border-gray-200 p-4">
-                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Report Information</h3>
-                                  <div className="space-y-2">
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Case ID:</span>
-                                      <span className="text-sm font-medium text-gray-900">{r.caseId}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Incident Date:</span>
-                                      <span className="text-sm text-gray-900">{new Date(r.incidentDate).toLocaleDateString()}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Incident Time:</span>
-                                      <span className="text-sm text-gray-900">{r.incidentTime}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Report Date:</span>
-                                      <span className="text-sm text-gray-900">{new Date(r.reportDate).toLocaleDateString()}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Status:</span>
-                                      <span className="text-sm flex items-center gap-1 text-gray-900">
-                                        {getStatusIcon(r.caseStatus)}
-                                        {r.caseStatus}
-                                      </span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Recurrence:</span>
-                                      <span className="text-sm text-gray-900">{r.recurrence}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Relevant Laws:</span>
-                                      <span className="text-sm text-gray-900">{r.relevantLaws}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="rounded-md border border-gray-200 p-4">
-                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Actions & Authorities</h3>
-                                  <div className="space-y-2">
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Action Taken:</span>
-                                      <span className="text-sm text-gray-900">{r.actionTaken}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Reported to Authorities:</span>
-                                      <span className="text-sm text-gray-900">{r.reportedToAuthorities}</span>
-                                    </div>
-                                     <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Document ID:</span>
-                                      <span className="text-sm text-gray-900">{r.documentId}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </TabsContent>
-
-                            <TabsContent value="parties" className="mt-4 space-y-4">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="rounded-md border border-gray-200 p-4">
-                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Victim Information</h3>
-                                  <div className="space-y-2">
-                                     <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Name:</span>
-                                      <span className="text-sm text-gray-900">{r.victimName}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Age:</span>
-                                      <span className="text-sm text-gray-900">{r.victimAge}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Gender:</span>
-                                      <span className="text-sm text-gray-900">{r.victimGender}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Nationality:</span>
-                                      <span className="text-sm text-gray-900">{r.victimNationality}</span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="rounded-md border border-gray-200 p-4">
-                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Perpetrator Information</h3>
-                                  <div className="space-y-2">
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Name:</span>
-                                      <span className="text-sm text-gray-900">{r.perpetratorName}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Gender:</span>
-                                      <span className="text-sm text-gray-900">{r.perpetratorGender}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Nationality:</span>
-                                      <span className="text-sm text-gray-900">{r.perpetratorNationality}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Relationship to Victim:</span>
-                                      <span className="text-sm text-gray-900">{r.relationshipToVictim}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Prior Criminal History:</span>
-                                      <span className="text-sm text-gray-900">{r.priorCriminalHistory}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </TabsContent>
-
-                            <TabsContent value="incident" className="mt-4 space-y-4">
-                              <div className="space-y-4">
-                                <div className="rounded-md border border-gray-200 p-4">
-                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Incident Details</h3>
-                                  <div className="space-y-2">
-                                     <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Location:</span>
-                                      <span className="text-sm text-gray-900">{r.incidentLocation}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2">
-                                      <span className="text-sm text-gray-600">Type of Violence:</span>
-                                      <span className="text-sm text-gray-900">{r.typeOfViolence}</span>
-                                    </div>
-                                    <div>
-                                      <h4 className="text-sm font-medium text-gray-600 mt-2">Summary</h4>
-                                      <p className="text-sm text-gray-900">{r.incidentSummary}</p>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="rounded-md border border-gray-200 p-4">
-                                  <h3 className="text-sm font-medium text-gray-600 mb-2">Injuries & Evidence</h3>
-                                   <div className="space-y-2">
-                                      <div>
-                                        <h4 className="text-sm font-medium text-gray-600">Injury Description</h4>
-                                        <p className="text-sm text-gray-900">{r.injuryDescription}</p>
-                                      </div>
-                                       <div>
-                                        <h4 className="text-sm font-medium text-gray-600 mt-2">Evidence Mentioned</h4>
-                                        <p className="text-sm text-gray-900">{r.evidenceMentioned}</p>
-                                      </div>
-                                  </div>
-                                </div>
-                              </div>
-                          </TabsContent>
-                          <TabsContent value="document">
-                            <Card>
-                              <CardHeader>
-                                <CardTitle>Original Document</CardTitle>
-                                <CardDescription>
-                                  View the original document associated with this report. Document ID: {r.documentId}
-                                </CardDescription>
-                              </CardHeader>
-                              <CardContent>
-                                <div className="flex items-center justify-center h-96 bg-gray-100 rounded-md">
-                                  <FileText className="h-16 w-16 text-gray-400" />
-                                  <p className="ml-4 text-gray-600">Document preview not available.</p>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </TabsContent>
-                        </Tabs>
-                      </DialogContent>
-                    </Dialog>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setViewingReport(r)}><Eye className="mr-2 h-4 w-4" /> View Details</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setEditingReport(r)}><Edit className="mr-2 h-4 w-4" /> Edit Report</DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(r.id)}><Trash className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
-              <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  No reports found.
-                </TableCell>
-              </TableRow>
+              <TableRow><TableCell colSpan={7} className="h-24 text-center">No reports found.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div>Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, sortedReports.length)} of {sortedReports.length} reports</div>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => <Button key={page} variant={page === currentPage ? "default" : "outline"} size="sm" onClick={() => setCurrentPage(page)}>{page}</Button>)}
+            <Button variant="outline" size="icon" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}><ChevronRight className="h-4 w-4" /></Button>
+          </div>
+        </div>
+      )}
+
+      {viewingReport && (
+        <Dialog open={!!viewingReport} onOpenChange={() => setViewingReport(null)}>
+          <DialogContent className="sm:max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Report Details: {viewingReport.caseId}</DialogTitle>
+              <DialogDescription>
+                Full details for report {viewingReport.caseId}, recorded on{" "}
+                {new Date(viewingReport.reportDate).toLocaleDateString()}.
+              </DialogDescription>
+            </DialogHeader>
+            <Tabs defaultValue="summary" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="summary">Report Details</TabsTrigger>
+                <TabsTrigger value="parties">Involved Parties</TabsTrigger>
+                <TabsTrigger value="incident">Incident & Evidence</TabsTrigger>
+                <TabsTrigger value="document">Document</TabsTrigger>
+              </TabsList>
+              <TabsContent value="summary" className="mt-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="rounded-md border border-gray-200 p-4">
+                    <h3 className="text-sm font-medium text-gray-600 mb-2">Report Information</h3>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Case ID:</span>
+                        <span className="text-sm font-medium text-gray-900">{viewingReport.caseId}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Incident Date:</span>
+                        <span className="text-sm text-gray-900">{new Date(viewingReport.incidentDate).toLocaleDateString()}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Incident Time:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.incidentTime}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Report Date:</span>
+                        <span className="text-sm text-gray-900">{new Date(viewingReport.reportDate).toLocaleDateString()}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Status:</span>
+                        <span className="text-sm flex items-center gap-1 text-gray-900">
+                          {getStatusIcon(viewingReport.caseStatus)}
+                          {viewingReport.caseStatus}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Recurrence:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.recurrence}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Relevant Laws:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.relevantLaws}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-gray-200 p-4">
+                    <h3 className="text-sm font-medium text-gray-600 mb-2">Actions & Authorities</h3>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Action Taken:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.actionTaken}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Reported to Authorities:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.reportedToAuthorities}</span>
+                      </div>
+                       <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Document ID:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.documentId}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="parties" className="mt-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="rounded-md border border-gray-200 p-4">
+                    <h3 className="text-sm font-medium text-gray-600 mb-2">Victim Information</h3>
+                    <div className="space-y-2">
+                       <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Name:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.victimName}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Age:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.victimAge}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Gender:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.victimGender}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Nationality:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.victimNationality}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border border-gray-200 p-4">
+                    <h3 className="text-sm font-medium text-gray-600 mb-2">Perpetrator Information</h3>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Name:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.perpetratorName}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Gender:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.perpetratorGender}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Nationality:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.perpetratorNationality}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Relationship to Victim:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.relationshipToVictim}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Prior Criminal History:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.priorCriminalHistory}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="incident" className="mt-4 space-y-4">
+                <div className="space-y-4">
+                  <div className="rounded-md border border-gray-200 p-4">
+                    <h3 className="text-sm font-medium text-gray-600 mb-2">Incident Details</h3>
+                    <div className="space-y-2">
+                       <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Location:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.incidentLocation}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-gray-600">Type of Violence:</span>
+                        <span className="text-sm text-gray-900">{viewingReport.typeOfViolence}</span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-600 mt-2">Summary</h4>
+                        <p className="text-sm text-gray-900">{viewingReport.incidentSummary}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border border-gray-200 p-4">
+                    <h3 className="text-sm font-medium text-gray-600 mb-2">Injuries & Evidence</h3>
+                     <div className="space-y-2">
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-600">Injury Description</h4>
+                          <p className="text-sm text-gray-900">{viewingReport.injuryDescription}</p>
+                        </div>
+                         <div>
+                          <h4 className="text-sm font-medium text-gray-600 mt-2">Evidence Mentioned</h4>
+                          <p className="text-sm text-gray-900">{viewingReport.evidenceMentioned}</p>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+            </TabsContent>
+            <TabsContent value="document">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Original Document</CardTitle>
+                  <CardDescription>
+                    View the original document associated with this report. Document ID: {viewingReport.documentId}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-center h-96 bg-gray-100 rounded-md">
+                    <FileText className="h-16 w-16 text-gray-400" />
+                    <p className="ml-4 text-gray-600">Document preview not available.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            </Tabs>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {editingReport && (
         <Dialog open={!!editingReport} onOpenChange={() => setEditingReport(null)}>
           <DialogContent className="sm:max-w-4xl">
@@ -713,50 +701,6 @@ export default function PoliceReportsTable() {
           </DialogContent>
         </Dialog>
       )}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredReports.length)} of {filteredReports.length} reports
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="sr-only">Previous Page</span>
-            </Button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                variant={page === currentPage ? "default" : "outline"}
-                size="sm"
-                className={
-                  page === currentPage
-                    ? "h-8 w-8 bg-blue-600 text-white hover:bg-blue-700"
-                    : "h-8 w-8 border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                }
-                onClick={() => setCurrentPage(page)}
-              >
-                {page}
-              </Button>
-            ))}
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-              <span className="sr-only">Next Page</span>
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   )
-} 
+}

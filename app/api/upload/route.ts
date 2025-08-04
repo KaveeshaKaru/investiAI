@@ -9,8 +9,6 @@ if (!API_KEY) {
   throw new Error("AI API key is not set");
 }
 
-const genAI = new GoogleGenerativeAI(API_KEY);
-
 const courtOrderSchema = {
   type: "OBJECT",
   properties: {
@@ -203,13 +201,8 @@ export async function POST(req: NextRequest) {
 
         const schema = docType === "courtOrder" ? courtOrderSchema : policeReportSchema;
         const systemInstruction = docType === "courtOrder" ? courtOrderSystemInstruction : policeReportSystemInstruction;
-
-        const model = getGenerativeModel(schema);
-        // This is a workaround for a bug in the library's types
-        (model as any).systemInstruction = {
-          role: "user",
-          parts: [{ text: systemInstruction }],
-        };
+        
+        const model = getGenerativeModel(schema, systemInstruction);
         
         const imagePart = await fileToGenerativePart(file);
 

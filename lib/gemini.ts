@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 const generationConfig = {
-  temperature: 2,
+  temperature: 0.5,
   topP: 1,
   topK: 1,
   maxOutputTokens: 8192,
@@ -26,7 +26,7 @@ const safetySettings = [
   },
 ];
 
-export const getGenerativeModel = (responseSchema?: any) => {
+export const getGenerativeModel = (responseSchema?: any, systemInstruction?: string) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("AI_API_KEY is not set");
@@ -34,14 +34,23 @@ export const getGenerativeModel = (responseSchema?: any) => {
 
   const genAI = new GoogleGenerativeAI(apiKey);
 
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+  const modelParams: any = {
+    model: "gemini-1.5-flash",
     generationConfig: {
       ...generationConfig,
       responseMimeType: responseSchema ? "application/json" : "text/plain",
     },
     safetySettings,
-  });
+  };
+
+  if (systemInstruction) {
+    modelParams.systemInstruction = {
+      role: "user",
+      parts: [{ text: systemInstruction }],
+    };
+  }
+  
+  const model = genAI.getGenerativeModel(modelParams);
 
   if (responseSchema) {
     // This is a workaround for a bug in the library's types
@@ -49,4 +58,4 @@ export const getGenerativeModel = (responseSchema?: any) => {
   }
 
   return model;
-}; 
+};

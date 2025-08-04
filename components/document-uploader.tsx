@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Upload, FileType, File, CheckCircle, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,8 +8,9 @@ import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import CasesResult from "./cases-result"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/components/ui/use-toast"
+import CasesResult from "./cases-result"
 import { CourtCase, PoliceReport } from "@/lib/types"
 
 type ExtractedData = {
@@ -19,6 +19,7 @@ type ExtractedData = {
 }
 
 export default function DocumentUploader() {
+  const { toast } = useToast()
   const [files, setFiles] = useState<File[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
@@ -55,51 +56,105 @@ export default function DocumentUploader() {
     setFiles((prev) => [...prev, ...newFiles])
     setExtractedData({ courtOrders: [], policeReports: [] })
 
-    // Initialize progress and status for each file
     newFiles.forEach((file) => {
       setUploadProgress((prev) => ({ ...prev, [file.name]: 0 }))
       setUploadStatus((prev) => ({ ...prev, [file.name]: "idle" }))
     })
   }
 
+  const saveToDatabase = async (data: any) => {
+    try {
+      const endpoint = docType === 'policeReport' ? '/api/police-reports' : '/api/court-cases';
+      
+      // Log the data being sent to help debug
+      console.log('Saving to database:', { endpoint, data });
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to save ${docType} to database`);
+      }
+
+      const savedData = await response.json();
+      console.log('Successfully saved:', savedData);
+      return savedData;
+    } catch (error: any) {
+      console.error('Error saving to database:', error);
+      toast({
+        title: "Error",
+        description: error.message || `Failed to save ${docType} to database`,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const uploadFiles = async () => {
-    setUploadStatus((prev) => ({ ...prev, [files[0].name]: "uploading" }))
-    setUploadProgress((prev) => ({ ...prev, [files[0].name]: 0 }))
+    try {
+      setUploadStatus((prev) => ({ ...prev, [files[0].name]: "uploading" }))
+      setUploadProgress((prev) => ({ ...prev, [files[0].name]: 0 }))
 
-    const formData = new FormData()
-    formData.append("file", files[0])
-    formData.append("docType", docType)
+      const formData = new FormData()
+      formData.append("file", files[0])
+      formData.append("docType", docType)
 
-    const response = await fetch("/api/upload", {
+      // First, process the document with Gemini
+      const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
-    })
+      })
 
-    if (response.ok) {
-        const data = await response.json()
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to process document');
+      }
+
+      const data = await response.json()
+      console.log('Extracted data:', data);
+      
+      // Save the extracted data to MongoDB
+      if (docType === 'courtOrder') {
+        const newCases: CourtCase[] = data.cases
+        const savedCases = await Promise.all(
+          newCases.map(caseData => saveToDatabase(caseData))
+        )
+        setExtractedData(prev => ({...prev, courtOrders: savedCases}))
         
-        if (docType === 'courtOrder') {
-          const newCases: CourtCase[] = data.cases
-          setExtractedData(prev => ({...prev, courtOrders: newCases}))
+        toast({
+          title: "Success",
+          description: `Successfully processed and saved ${savedCases.length} court orders`,
+        })
+      } else if (docType === 'policeReport') {
+        const newReports: PoliceReport[] = data.cases
+        const savedReports = await Promise.all(
+          newReports.map(reportData => saveToDatabase(reportData))
+        )
+        setExtractedData(prev => ({...prev, policeReports: savedReports}))
+        
+        toast({
+          title: "Success",
+          description: `Successfully processed and saved ${savedReports.length} police reports`,
+        })
+      }
 
-          const existingCases = JSON.parse(localStorage.getItem("cases") || "[]")
-          const allCases = [...existingCases, ...newCases]
-          localStorage.setItem("cases", JSON.stringify(allCases))
+      setUploadStatus((prev) => ({ ...prev, [files[0].name]: "success" }))
+      setUploadProgress((prev) => ({ ...prev, [files[0].name]: 100 }))
 
-        } else if (docType === 'policeReport') {
-            const newReports: PoliceReport[] = data.cases
-            setExtractedData(prev => ({...prev, policeReports: newReports}))
-
-            const existingReports = JSON.parse(localStorage.getItem("policeReports") || "[]")
-            const allReports = [...existingReports, ...newReports]
-            localStorage.setItem("policeReports", JSON.stringify(allReports))
-        }
-
-        setUploadStatus((prev) => ({ ...prev, [files[0].name]: "success" }))
-        setUploadProgress((prev) => ({ ...prev, [files[0].name]: 100 }))
-
-    } else {
-        setUploadStatus((prev) => ({ ...prev, [files[0].name]: "error" }))
+    } catch (error: any) {
+      console.error('Upload error:', error)
+      setUploadStatus((prev) => ({ ...prev, [files[0].name]: "error" }))
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process and save document",
+        variant: "destructive",
+      })
     }
   }
 
@@ -155,17 +210,17 @@ export default function DocumentUploader() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-               <div className="mb-4">
-                  <Select value={docType} onValueChange={(value) => setDocType(value as "courtOrder" | "policeReport")}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select document type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="courtOrder">Court Order</SelectItem>
-                      <SelectItem value="policeReport">Police Report</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="mb-4">
+                <Select value={docType} onValueChange={(value) => setDocType(value as "courtOrder" | "policeReport")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select document type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="courtOrder">Court Order</SelectItem>
+                    <SelectItem value="policeReport">Police Report</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div
                 className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-colors ${
                   isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-gray-50 hover:bg-gray-100"
@@ -302,9 +357,9 @@ export default function DocumentUploader() {
           </Card>
         </TabsContent>
       </Tabs>
-      { (extractedData.courtOrders.length > 0 || extractedData.policeReports.length > 0) && (
+      {(extractedData.courtOrders.length > 0 || extractedData.policeReports.length > 0) && (
         <div className="mt-6">
-            <CasesResult cases={extractedData.courtOrders} policeReports={extractedData.policeReports} docType={docType} />
+          <CasesResult cases={extractedData.courtOrders} policeReports={extractedData.policeReports} docType={docType} />
         </div>
       )}
     </div>
