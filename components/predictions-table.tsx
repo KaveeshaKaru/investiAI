@@ -2,38 +2,37 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowUp, Bot, FileText } from "lucide-react"
-
-type Prediction = {
-  caseId: string
-  caseSummary: string
-  suggestedAction: string
-}
-
-const hardcodedPredictions: Prediction[] = [
-  {
-    caseId: "BR 1082/25",
-    caseSummary: "This case involves a reported incident of domestic violence that occurred on February 26, 2025, in Galle, Sri Lanka. The victim alleges physical assault by her husband, resulting in significant injuries. The suspect has been arrested, and CCTV footage was obtained.",
-    suggestedAction: "Likely to be referred to court on charges of domestic violence and grievous bodily harm. Bail may be denied initially. CCTV footage will be crucial evidence, and a protection order for the victim is probable. Conviction could lead to imprisonment or a substantial fine.",
-  },
-  {
-    caseId: "WCIB 367/04",
-    caseSummary: "A theft case where the suspect was caught with stolen goods. The suspect has a prior criminal history of similar offenses.",
-    suggestedAction: "Charge with theft and consider prior offenses for sentencing. Verify ownership of recovered items.",
-  },
-  {
-    caseId: "MCR/122/25",
-    caseSummary: "A traffic accident involving a drunk driver. The driver was found to be over the legal alcohol limit.",
-    suggestedAction: "Charge with driving under the influence and reckless driving. Collect breathalyzer and witness reports.",
-  },
-]
+import { ArrowUp, Bot, FileText, Loader2, AlertCircle } from "lucide-react"
+import { usePredictions } from "@/hooks/use-predictions"
+import ReactMarkdown from "react-markdown"
 
 export default function PredictionsTable() {
+  const { predictions, loading, error } = usePredictions()
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <div className="text-center">
+          <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+          <p className="text-gray-600">Failed to load predictions. Please try again later.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Case Summary and Suggested Predictions</CardTitle>
-        <CardDescription>AI-powered predictions and summaries for active cases.</CardDescription>
+        <CardDescription>Lexa AI - predictions and summaries for active cases.</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
@@ -45,13 +44,25 @@ export default function PredictionsTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {hardcodedPredictions.map((prediction) => (
-              <TableRow key={prediction.caseId}>
-                <TableCell className="font-medium">{prediction.caseId}</TableCell>
-                <TableCell>{prediction.caseSummary}</TableCell>
-                <TableCell>{prediction.suggestedAction}</TableCell>
+            {predictions.length > 0 ? (
+              predictions.map((prediction) => (
+                <TableRow key={prediction.id}>
+                  <TableCell className="font-medium">{prediction.caseId}</TableCell>
+                  <TableCell>{prediction.caseSummary}</TableCell>
+                  <TableCell>
+                    <div className="prose prose-sm">
+                      <ReactMarkdown>{prediction.suggestedAction}</ReactMarkdown>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={3} className="h-24 text-center">
+                  No predictions found.
+                </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </CardContent>

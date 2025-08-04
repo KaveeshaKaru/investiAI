@@ -18,6 +18,21 @@ function normalizeCaseStatus(status: string): string {
   return statusMap[normalizedStatus] || 'ongoing';
 }
 
+export async function upsertPoliceReport(reportData: PoliceReport) {
+  await connectDB();
+  
+  const normalizedData = {
+    ...reportData,
+    caseStatus: normalizeCaseStatus(reportData.caseStatus || 'ongoing')
+  };
+  
+  return await PoliceReportModel.findOneAndUpdate(
+    { caseId: reportData.caseId },
+    normalizedData,
+    { upsert: true, new: true, runValidators: true }
+  );
+}
+
 export async function createPoliceReport(reportData: PoliceReport) {
   await connectDB();
   

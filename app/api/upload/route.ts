@@ -1,14 +1,11 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, SchemaType } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 import { getGenerativeModel } from "@/lib/gemini";
 import { v4 as uuidv4 } from 'uuid';
+import { upsertPrediction } from "@/lib/services/predictionService";
+import { upsertPoliceReport } from "@/lib/services/policeReportService";
+import { PoliceReport } from "@/lib/types";
 
-const API_KEY = process.env.GEMINI_API_KEY;
-
-if (!API_KEY) {
-  throw new Error("AI API key is not set");
-}
-
+// ... (keep the existing schemas and system instructions)
 const courtOrderSchema = {
   type: "OBJECT",
   properties: {
@@ -178,6 +175,19 @@ const policeReportSystemInstruction =
 "20. If the report is in a non-English language (e.g., Sinhala), translate relevant sections to English for extraction.\n" +
 "21. If multiple cases are present, extract each as a separate entry. Ensure the extracted data aligns with the provided schema and is presented in English.";
 
+const predictionSystemInstruction = `
+You are an expert in legal analysis and prediction. Based on the provided police report, generate a concise case summary and a set of suggested predictions.
+
+**Case Summary:**
+Provide a neutral, factual summary of the case based *only* on the information in the report.
+
+**Suggested Predictions and Supporting Arguments:**
+Based on the case summary, provide a series of predictions about the likely progression of the case. For each prediction, provide a clear, concise title and a brief paragraph of supporting arguments, citing evidence from the police report where possible.
+
+Example Output:
+**Case Outcome:** Likely to be referred to court.
+**Supporting Arguments:** Given the severity of the alleged assault (resulting in significant injuries), the availability of CCTV footage, and the fact that the suspect has been arrested, it is highly probable that the case will be formally presented in court for legal proceedings. The police are seeking to keep the suspect in custody until March 19, 2025, suggesting an intent to pursue charges [from police report].
+`;
 
 async function fileToGenerativePart(file: File) {
     const base64EncodedData = Buffer.from(await file.arrayBuffer()).toString("base64");
@@ -198,35 +208,60 @@ export async function POST(req: NextRequest) {
         if (!file || !docType) {
             return NextResponse.json({ error: "No file or document type found" }, { status: 400 });
         }
-
+        
         const schema = docType === "courtOrder" ? courtOrderSchema : policeReportSchema;
         const systemInstruction = docType === "courtOrder" ? courtOrderSystemInstruction : policeReportSystemInstruction;
         
         const model = getGenerativeModel(schema, systemInstruction);
-        
         const imagePart = await fileToGenerativePart(file);
 
         const prompt = "Please extract the information from this document based on the system instructions.";
-
+        
         const result = await model.generateContent([prompt, imagePart]);
         const response = result.response;
         const text = response.text();
-
         const parsedData = JSON.parse(text);
 
-        // Add unique IDs to each case
         if (parsedData.cases && Array.isArray(parsedData.cases)) {
-          const documentId = uuidv4();
-          parsedData.cases = parsedData.cases.map((c: any) => ({
-            ...c,
-            id: uuidv4(),
-            documentId,
-          }));
+            const documentId = uuidv4();
+            
+            parsedData.cases = parsedData.cases.map((c: any) => ({
+                ...c,
+                id: uuidv4(),
+                documentId,
+            }));
+
+            if (docType === 'policeReport') {
+                for (const report of parsedData.cases) {
+                    const reportToSave: PoliceReport = { ...report, documentId };
+                    const savedReport = await upsertPoliceReport(reportToSave);
+
+                    const predictionModel = getGenerativeModel();
+                    const predictionPrompt = `Based on the following police report, generate a case summary and suggested predictions:\n\n${JSON.stringify(reportToSave, null, 2)}`;
+                    
+                    const predictionResult = await predictionModel.generateContent([predictionSystemInstruction, predictionPrompt]);
+                    const predictionResponse = predictionResult.response;
+                    const predictionText = predictionResponse.text();
+                    
+                    const summaryMatch = predictionText.match(/\*\*Case Summary:\*\*\s*([\s\S]*?)\s*\*\*Suggested Predictions and Supporting Arguments:\*\*/);
+                    const actionMatch = predictionText.split('**Suggested Predictions and Supporting Arguments:**');
+                    
+                    const caseSummary = summaryMatch ? summaryMatch[1].trim() : "Summary could not be generated.";
+                    const suggestedAction = actionMatch.length > 1 ? actionMatch[1].trim() : "Predictions could not be generated.";
+
+                    await upsertPrediction({
+                        caseId: savedReport.caseId,
+                        caseSummary: caseSummary,
+                        suggestedAction: suggestedAction,
+                        policeReport: savedReport._id.toString(),
+                    });
+                }
+            }
         }
 
         return NextResponse.json(parsedData);
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error processing file:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
     }
 }
