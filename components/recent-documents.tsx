@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, Filter, FileText, Download, Trash2, MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,78 +14,78 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-
-type Document = {
-  id: string
-  name: string
-  type: string
-  status: "processed" | "processing" | "failed"
-  date: string
-  size: string
-  entities: number
-}
+import { IDocument } from "@/models/Document"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function RecentDocuments() {
-  const [documents, setDocuments] = useState<Document[]>([
-    {
-      id: "doc-1",
-      name: "Police Report #2023-0456.pdf",
-      type: "Police Report",
-      status: "processed",
-      date: "2023-11-15",
-      size: "3.2 MB",
-      entities: 47,
-    },
-    {
-      id: "doc-2",
-      name: "Witness Statement - John Doe.docx",
-      type: "Witness Statement",
-      status: "processed",
-      date: "2023-11-14",
-      size: "1.8 MB",
-      entities: 32,
-    },
-    {
-      id: "doc-3",
-      name: "Evidence Log - Case #2023-789.xlsx",
-      type: "Evidence Log",
-      status: "processing",
-      date: "2023-11-14",
-      size: "4.5 MB",
-      entities: 0,
-    },
-    {
-      id: "doc-4",
-      name: "Court Order - Search Warrant.pdf",
-      type: "Court Order",
-      status: "processed",
-      date: "2023-11-12",
-      size: "2.1 MB",
-      entities: 28,
-    },
-    {
-      id: "doc-5",
-      name: "Interview Transcript - Suspect.pdf",
-      type: "Interview",
-      status: "failed",
-      date: "2023-11-10",
-      size: "5.7 MB",
-      entities: 0,
-    },
-  ])
+  const [documents, setDocuments] = useState<IDocument[]>([])
+  const { toast } = useToast()
 
-  const deleteDocument = (id: string) => {
-    setDocuments(documents.filter((doc) => doc.id !== id))
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const response = await fetch("/api/documents")
+        const data = await response.json()
+        if (data.success) {
+          setDocuments(data.data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch documents:", error)
+      }
+    }
+
+    fetchDocuments()
+  }, [])
+
+  const deleteDocument = async (id: string) => {
+    try {
+      const response = await fetch(`/api/documents/${id}`, {
+        method: "DELETE",
+      })
+      if (response.ok) {
+        setDocuments(documents.filter((doc) => doc._id !== id))
+        toast({
+          title: "Success",
+          description: "Document deleted successfully.",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete document.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Failed to delete document:", error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      })
+    }
   }
 
-  const getStatusBadge = (status: Document["status"]) => {
+  const getStatusBadge = (status: IDocument["status"]) => {
     switch (status) {
-      case "processed":
+      case "success":
         return <Badge className="bg-green-100 text-green-700 hover:bg-green-200">Processed</Badge>
-      case "processing":
+      case "uploading":
         return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200">Processing</Badge>
-      case "failed":
+      case "error":
         return <Badge className="bg-red-100 text-red-700 hover:bg-red-200">Failed</Badge>
+      default:
+        return <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-200">Pending</Badge>
+    }
+  }
+
+  const getTypeBadge = (docType: IDocument["docType"]) => {
+    switch (docType) {
+      case "policeReport":
+        return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200">Police Report</Badge>
+      case "courtOrder":
+        return <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200">Court Order</Badge>
+      default:
+        return <Badge>{docType}</Badge>
     }
   }
 
@@ -130,24 +130,22 @@ export default function RecentDocuments() {
                 <th className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
                 <th className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
                 <th className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">Size</th>
-                <th className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">Entities</th>
                 <th className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {documents.map((doc) => (
-                <tr key={doc.id} className="bg-white hover:bg-gray-50">
+                <tr key={doc._id as string} className="bg-white hover:bg-gray-50">
                   <td className="whitespace-nowrap px-4 py-4 text-sm">
                     <div className="flex items-center gap-3">
                       <FileText className="h-5 w-5 text-gray-500" />
-                      <span className="font-medium text-gray-900">{doc.name}</span>
+                      <span className="font-medium text-gray-900">{doc.fileName}</span>
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{doc.type}</td>
+                  <td className="whitespace-nowrap px-4 py-4 text-sm">{getTypeBadge(doc.docType)}</td>
                   <td className="whitespace-nowrap px-4 py-4 text-sm">{getStatusBadge(doc.status)}</td>
-                  <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{doc.date}</td>
-                  <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{doc.size}</td>
-                  <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{doc.entities}</td>
+                  <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{new Date(doc.createdAt).toLocaleDateString()}</td>
+                  <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{(doc.fileSize / 1024 / 1024).toFixed(2)} MB</td>
                   <td className="whitespace-nowrap px-4 py-4 text-sm">
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-gray-700">
@@ -158,7 +156,7 @@ export default function RecentDocuments() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-gray-500 hover:text-gray-700"
-                        onClick={() => deleteDocument(doc.id)}
+                        onClick={() => deleteDocument(doc._id as string)}
                       >
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Delete</span>
