@@ -34,10 +34,10 @@ export default function DocumentUploader() {
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [uploadStatus, setUploadStatus] = useState<Record<string, "idle" | "uploading" | "success" | "error">>({})
   const [extractedData, setExtractedData] = useState<ExtractedData>({ courtOrders: [], policeReports: [] })
-  const [docType, setDocType] = useState<"courtOrder" | "policeReport">("courtOrder")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedDocType, setSelectedDocType] = useState<"courtOrder" | "policeReport" | null>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [processedDocType, setProcessedDocType] = useState<"courtOrder" | "policeReport" | null>(null)
 
   useEffect(() => {
     // This effect is intentionally left blank to prevent fetching documents on load.
@@ -95,9 +95,9 @@ export default function DocumentUploader() {
     }
   }
 
-  const saveToDatabase = async (data: any) => {
+  const saveToDatabase = async (data: any, docType: "courtOrder" | "policeReport") => {
     try {
-      const endpoint = docType === 'policeReport' ? '/api/police-reports' : '/api/court-cases';
+      const endpoint = docType === 'policeReport' ? '/api/police-reports' : '/api/cases';
       
       // Log the data being sent to help debug
       console.log('Saving to database:', { endpoint, data });
@@ -143,6 +143,9 @@ export default function DocumentUploader() {
       return;
     }
 
+    setExtractedData({ courtOrders: [], policeReports: [] });
+    setProcessedDocType(document.docType as "courtOrder" | "policeReport");
+
     try {
       // Save to database at the time of processing
       const dbResponse = await fetch('/api/documents', {
@@ -182,7 +185,7 @@ export default function DocumentUploader() {
       if (document.docType === 'courtOrder') {
         const newCases: CourtCase[] = data.cases
         const savedCases = await Promise.all(
-          newCases.map(caseData => saveToDatabase(caseData))
+          newCases.map(caseData => saveToDatabase(caseData, 'courtOrder'))
         )
         setExtractedData(prev => ({...prev, courtOrders: savedCases}))
         
@@ -193,7 +196,7 @@ export default function DocumentUploader() {
       } else if (document.docType === 'policeReport') {
         const newReports: PoliceReport[] = data.cases
         const savedReports = await Promise.all(
-          newReports.map(reportData => saveToDatabase(reportData))
+          newReports.map(reportData => saveToDatabase(reportData, 'policeReport'))
         )
         setExtractedData(prev => ({...prev, policeReports: savedReports}))
         
@@ -385,9 +388,9 @@ export default function DocumentUploader() {
               </Button>
             </CardFooter>
           </Card>
-      {(extractedData.courtOrders.length > 0 || extractedData.policeReports.length > 0) && (
+      {(extractedData.courtOrders.length > 0 || extractedData.policeReports.length > 0) && processedDocType && (
         <div className="mt-6">
-          <CasesResult cases={extractedData.courtOrders} policeReports={extractedData.policeReports} docType={docType} />
+          <CasesResult cases={extractedData.courtOrders} policeReports={extractedData.policeReports} docType={processedDocType} />
         </div>
       )}
 
