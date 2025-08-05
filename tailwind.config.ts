@@ -59,6 +59,10 @@ const config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        "geist-mono": "var(--font-geist-mono)",
+        "poppins": "var(--font-poppins)",
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

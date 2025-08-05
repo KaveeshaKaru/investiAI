@@ -52,7 +52,7 @@ export default function PredictionsTable() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="font-geist-mono">
         <CardTitle>Case Summary and Suggested Predictions</CardTitle>
         <CardDescription>Lexa AI - predictions and summaries for active cases.</CardDescription>
       </CardHeader>

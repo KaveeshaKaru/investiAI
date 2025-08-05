@@ -283,8 +283,8 @@ export default function DocumentUploader() {
       {isProcessing && <Loader />}
           <Card className="bg-white border-gray-200">
             <CardHeader>
-              <CardTitle className="text-gray-900">Document Upload</CardTitle>
-              <CardDescription className="text-gray-600">
+              <CardTitle className="font-geist-mono text-gray-900">Document Upload</CardTitle>
+              <CardDescription className="font-geist-mono text-gray-600">
                 Upload case documents for automated information extraction
               </CardDescription>
             </CardHeader>

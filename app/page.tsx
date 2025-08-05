@@ -74,11 +74,11 @@ export default function Home() {
       <main className="flex-1">
         <div className="container grid items-start gap-6 px-4 py-6 md:px-6 md:py-8">
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Document Processing</h1>
-            <p className="text-gray-600">Upload case documents for automated information extraction and analysis</p>
+            <h1 className="font-geist-mono text-3xl font-bold tracking-tight text-gray-900">Document Processing</h1>
+            <p className="font-geist-mono text-gray-600">Upload case documents for automated information extraction and analysis</p>
           </div>
           <Tabs defaultValue="upload" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-gray-100">
+            <TabsList className="font-geist-mono grid w-full grid-cols-3 bg-gray-100">
               <TabsTrigger value="upload">Upload Documents</TabsTrigger>
               <TabsTrigger value="recent">Recent Documents</TabsTrigger>
               <TabsTrigger value="stats">Processing Stats</TabsTrigger>
@@ -96,7 +96,7 @@ export default function Home() {
         </div>
       </main>
       <footer className="border-t border-gray-200 bg-gray-50 py-6 text-center text-sm text-gray-500">
-        <div className="container px-4 md:px-6">
+        <div className="font-geist-mono container px-4 md:px-6">
           <p>© 2025 Lexa AI. All rights reserved.</p>
         </div>
       </footer>
