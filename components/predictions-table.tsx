@@ -8,14 +8,28 @@ import ReactMarkdown from "react-markdown"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function PredictionsTable() {
   const { predictions, loading, error } = usePredictions()
+  const { toast } = useToast()
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast({
+      title: "Copied to clipboard",
+      description: "The suggested actions have been copied to your clipboard.",
+    })
+  }
 
   if (loading) {
     return (
@@ -65,10 +79,19 @@ export default function PredictionsTable() {
                       <DialogContent className="sm:max-w-[950px]">
                         <DialogHeader>
                           <DialogTitle>Suggested Actions for {prediction.caseId}</DialogTitle>
+                          <DialogDescription>
+                            These are the suggested actions based on the case summary and the available data.
+                          </DialogDescription>
                         </DialogHeader>
-                        <div className="prose prose-sm max-h-[80vh] overflow-y-auto p-4">
+                        <ScrollArea className="prose prose-sm max-h-[60vh] overflow-y-auto p-4">
                           <ReactMarkdown>{prediction.suggestedAction}</ReactMarkdown>
-                        </div>
+                        </ScrollArea>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => handleCopy(prediction.suggestedAction)}>Copy Suggestions</Button>
+                          <DialogClose asChild>
+                            <Button>Close</Button>
+                          </DialogClose>
+                        </DialogFooter>
                       </DialogContent>
                     </Dialog>
                   </TableCell>
