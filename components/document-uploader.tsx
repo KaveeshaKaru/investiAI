@@ -8,6 +8,14 @@ import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
 import CasesResult from "./cases-result"
 import { CourtCase, PoliceReport } from "@/lib/types"
@@ -27,6 +35,9 @@ export default function DocumentUploader() {
   const [uploadStatus, setUploadStatus] = useState<Record<string, "idle" | "uploading" | "success" | "error">>({})
   const [extractedData, setExtractedData] = useState<ExtractedData>({ courtOrders: [], policeReports: [] })
   const [docType, setDocType] = useState<"courtOrder" | "policeReport">("courtOrder")
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [selectedDocType, setSelectedDocType] = useState<"courtOrder" | "policeReport" | null>(null)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -67,16 +78,20 @@ export default function DocumentUploader() {
     }
   }
 
-  const handleFiles = async (fileList: FileList) => {
-    const newFileObjects = Array.from(fileList)
-    setFileObjects(prev => [...prev, ...newFileObjects])
-    setExtractedData({ courtOrders: [], policeReports: [] })
+  const handleFiles = (fileList: FileList) => {
+    const file = fileList[0];
+    if (file) {
+      setPendingFile(file);
+      setIsDialogOpen(true);
+    }
+  }
 
-    for (const file of newFileObjects) {
+  const handleConfirm = async () => {
+    if (pendingFile && selectedDocType) {
       const newDocument = {
-        fileName: file.name,
-        fileSize: file.size,
-        docType: docType,
+        fileName: pendingFile.name,
+        fileSize: pendingFile.size,
+        docType: selectedDocType,
         status: 'pending',
       }
 
@@ -91,6 +106,7 @@ export default function DocumentUploader() {
         const data = await response.json();
         if (data.success) {
           setDocuments(prev => [...prev, data.data]);
+          setFileObjects(prev => [...prev, pendingFile]);
         } else {
           toast({
             title: "Error",
@@ -100,6 +116,10 @@ export default function DocumentUploader() {
         }
       } catch (error) {
         console.error('Failed to save document', error);
+      } finally {
+        setIsDialogOpen(false);
+        setPendingFile(null);
+        setSelectedDocType(null);
       }
     }
   }
@@ -270,17 +290,6 @@ export default function DocumentUploader() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="mb-4">
-                <Select value={docType} onValueChange={(value) => setDocType(value as "courtOrder" | "policeReport")}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select document type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="courtOrder">Court Order</SelectItem>
-                    <SelectItem value="policeReport">Police Report</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <div
                 className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-colors ${
                   isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-gray-50 hover:bg-gray-100"
@@ -392,6 +401,30 @@ export default function DocumentUploader() {
           <CasesResult cases={extractedData.courtOrders} policeReports={extractedData.policeReports} docType={docType} />
         </div>
       )}
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select Document Type</DialogTitle>
+            <DialogDescription>
+              Please select the type of document you are uploading. This helps us process it correctly.
+            </DialogDescription>
+          </DialogHeader>
+          <Select onValueChange={(value) => setSelectedDocType(value as "courtOrder" | "policeReport")}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select document type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="courtOrder">Court Order</SelectItem>
+              <SelectItem value="policeReport">Police Report</SelectItem>
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleConfirm} disabled={!selectedDocType}>Confirm</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
