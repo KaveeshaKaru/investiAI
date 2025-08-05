@@ -40,18 +40,8 @@ export default function DocumentUploader() {
   const [pendingFile, setPendingFile] = useState<File | null>(null)
 
   useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        const response = await fetch('/api/documents');
-        const data = await response.json();
-        if (data.success) {
-          setDocuments(data.data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch documents', error);
-      }
-    };
-    fetchDocuments();
+    // This effect is intentionally left blank to prevent fetching documents on load.
+    // The user wants a clean slate with every page refresh.
   }, []);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -86,41 +76,22 @@ export default function DocumentUploader() {
     }
   }
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     if (pendingFile && selectedDocType) {
       const newDocument = {
+        _id: new Date().toISOString(), // Temporary unique ID
         fileName: pendingFile.name,
         fileSize: pendingFile.size,
         docType: selectedDocType,
         status: 'pending',
-      }
+      } as IDocument
 
-      try {
-        const response = await fetch('/api/documents', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(newDocument),
-        });
-        const data = await response.json();
-        if (data.success) {
-          setDocuments(prev => [...prev, data.data]);
-          setFileObjects(prev => [...prev, pendingFile]);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to save document to database",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error('Failed to save document', error);
-      } finally {
-        setIsDialogOpen(false);
-        setPendingFile(null);
-        setSelectedDocType(null);
-      }
+      setDocuments(prev => [...prev, newDocument]);
+      setFileObjects(prev => [...prev, pendingFile]);
+      
+      setIsDialogOpen(false);
+      setPendingFile(null);
+      setSelectedDocType(null);
     }
   }
 
@@ -173,16 +144,28 @@ export default function DocumentUploader() {
     }
 
     try {
-      await fetch(`/api/documents/${document._id}`, {
-        method: 'PUT',
+      // Save to database at the time of processing
+      const dbResponse = await fetch('/api/documents', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'uploading' }),
+        body: JSON.stringify({
+          fileName: file.name,
+          fileSize: file.size,
+          docType: document.docType,
+          status: 'uploading',
+        }),
       });
-      setDocuments(prev => prev.map(doc => doc._id === document._id ? { ...doc, status: 'uploading' } as IDocument : doc));
+      const dbData = await dbResponse.json();
+      if (!dbData.success) {
+        throw new Error('Failed to save document to database.');
+      }
+      const dbDocument = dbData.data;
+
+      setDocuments(prev => prev.map(doc => doc._id === document._id ? { ...doc, status: 'uploading', _id: dbDocument._id } as IDocument : doc));
       
       const formData = new FormData()
       formData.append("file", file)
-      formData.append("docType", docType)
+      formData.append("docType", document.docType as string)
 
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -196,7 +179,7 @@ export default function DocumentUploader() {
 
       const data = await response.json()
       
-      if (docType === 'courtOrder') {
+      if (document.docType === 'courtOrder') {
         const newCases: CourtCase[] = data.cases
         const savedCases = await Promise.all(
           newCases.map(caseData => saveToDatabase(caseData))
@@ -207,7 +190,7 @@ export default function DocumentUploader() {
           title: "Success",
           description: `Successfully processed and saved ${savedCases.length} court orders`,
         })
-      } else if (docType === 'policeReport') {
+      } else if (document.docType === 'policeReport') {
         const newReports: PoliceReport[] = data.cases
         const savedReports = await Promise.all(
           newReports.map(reportData => saveToDatabase(reportData))
@@ -220,27 +203,33 @@ export default function DocumentUploader() {
         })
       }
 
-      await fetch(`/api/documents/${document._id}`, {
+      await fetch(`/api/documents/${dbDocument._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'success' }),
       });
-      setDocuments(prev => prev.map(doc => doc._id === document._id ? { ...doc, status: 'success' } as IDocument : doc));
       
+      setDocuments(prev => prev.map(doc => doc._id === dbDocument._id ? { ...doc, status: 'success' } as IDocument : doc));
+
       setTimeout(() => {
+        setDocuments(prev => prev.filter(doc => doc._id !== dbDocument._id));
         setFileObjects(prev => prev.filter(f => f.name !== file.name));
-        setDocuments(prev => prev.filter(doc => doc._id !== document._id));
       }, 1500);
 
     } catch (error: any) {
       console.error('Upload error:', error)
       if (document) {
-        await fetch(`/api/documents/${document._id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'error' }),
-        });
-        setDocuments(prev => prev.map(doc => doc._id === document._id ? { ...doc, status: 'error' } as IDocument : doc));
+        setDocuments(prev => prev.map(doc => doc.fileName === file.name ? { ...doc, status: 'error' } as IDocument : doc));
+        
+        // Also update in DB if it was already created
+        const dbDoc = documents.find(d => d.fileName === file.name && d.status !== 'pending');
+        if (dbDoc && dbDoc._id) {
+            fetch(`/api/documents/${dbDoc._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'error' }),
+            });
+        }
       }
       toast({
         title: "Error",
