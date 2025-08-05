@@ -5,6 +5,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowUp, Bot, FileText, Loader2, AlertCircle } from "lucide-react"
 import { usePredictions } from "@/hooks/use-predictions"
 import ReactMarkdown from "react-markdown"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
 export default function PredictionsTable() {
   const { predictions, loading, error } = usePredictions()
@@ -50,9 +58,19 @@ export default function PredictionsTable() {
                   <TableCell className="font-medium">{prediction.caseId}</TableCell>
                   <TableCell>{prediction.caseSummary}</TableCell>
                   <TableCell>
-                    <div className="prose prose-sm">
-                      <ReactMarkdown>{prediction.suggestedAction}</ReactMarkdown>
-                    </div>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline">View Suggestions</Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[950px]">
+                        <DialogHeader>
+                          <DialogTitle>Suggested Actions for {prediction.caseId}</DialogTitle>
+                        </DialogHeader>
+                        <div className="prose prose-sm max-h-[80vh] overflow-y-auto p-4">
+                          <ReactMarkdown>{prediction.suggestedAction}</ReactMarkdown>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </TableCell>
                 </TableRow>
               ))
