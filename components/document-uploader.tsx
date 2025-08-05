@@ -21,6 +21,8 @@ import CasesResult from "./cases-result"
 import { CourtCase, PoliceReport } from "@/lib/types"
 import { IDocument } from "@/models/Document"
 
+import Loader from "./loader"
+
 type ExtractedData = {
   courtOrders: CourtCase[]
   policeReports: PoliceReport[]
@@ -38,6 +40,7 @@ export default function DocumentUploader() {
   const [selectedDocType, setSelectedDocType] = useState<"courtOrder" | "policeReport" | null>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [processedDocType, setProcessedDocType] = useState<"courtOrder" | "policeReport" | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => {
     // This effect is intentionally left blank to prevent fetching documents on load.
@@ -145,6 +148,7 @@ export default function DocumentUploader() {
 
     setExtractedData({ courtOrders: [], policeReports: [] });
     setProcessedDocType(document.docType as "courtOrder" | "policeReport");
+    setIsProcessing(true);
 
     try {
       // Save to database at the time of processing
@@ -239,6 +243,8 @@ export default function DocumentUploader() {
         description: error.message || "Failed to process and save document",
         variant: "destructive",
       })
+    } finally {
+      setIsProcessing(false);
     }
   }
 
@@ -274,6 +280,7 @@ export default function DocumentUploader() {
 
   return (
     <div className="space-y-6">
+      {isProcessing && <Loader />}
           <Card className="bg-white border-gray-200">
             <CardHeader>
               <CardTitle className="text-gray-900">Document Upload</CardTitle>
