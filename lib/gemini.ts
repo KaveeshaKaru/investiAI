@@ -35,7 +35,7 @@ export const getGenerativeModel = (responseSchema?: any, systemInstruction?: str
   const genAI = new GoogleGenerativeAI(apiKey);
 
   const modelParams: any = {
-    model: "gemini-1.5-flash",
+    model: "gemini-2.0-flash",
     generationConfig: {
       ...generationConfig,
       responseMimeType: responseSchema ? "application/json" : "text/plain",
