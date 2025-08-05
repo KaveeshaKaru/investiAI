@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import Image from "next/image"
 
 export default function Header() {
   const pathname = usePathname()
@@ -16,24 +17,15 @@ export default function Header() {
     <header className="border-b border-gray-200 bg-white shadow-sm">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-2">
-          <div className="size-8 rounded-full bg-blue-600 p-1.5">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="size-full text-white"
-            >
-              <path d="M16 2v5h5" />
-              <path d="M21 6v6.5c0 .8-.7 1.5-1.5 1.5h-7c-.8 0-1.5-.7-1.5-1.5v-9c0-.8.7-1.5 1.5-1.5H17l4 4z" />
-              <path d="M7 8v8.8c0 .3.2.6.4.8.2.2.5.4.8.4H15" />
-              <path d="M3 12v8.8c0 .3.2.6.4.8.2.2.5.4.8.4H11" />
-            </svg>
-          </div>
-          <span className="text-xl font-bold text-gray-900">Lexa AI</span>
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/lexaLogo.png"
+              alt="Lexa AI Logo"
+              width={160}
+              height={40}
+              className="object-contain"
+            />
+          </Link>
         </div>
         <nav className="hidden md:flex md:gap-6">
           {navLinks.map((link) => (
