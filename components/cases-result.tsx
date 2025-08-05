@@ -1,6 +1,7 @@
 "use client"
 
 import { Eye, MoreHorizontal } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -31,6 +32,8 @@ type CasesResultProps = {
 }
 
 export default function CasesResult({ cases, policeReports, docType }: CasesResultProps) {
+  const router = useRouter()
+
   const getStatusBadge = (status: CourtCase["status"] | PoliceReport["caseStatus"]) => {
     switch (status) {
       case "closed":
@@ -100,14 +103,17 @@ export default function CasesResult({ cases, policeReports, docType }: CasesResu
     </TableRow>
   )
 
-  const renderPoliceReportRow = (r: PoliceReport) => (
-     <TableRow key={r.id}>
-      <TableCell>{r.caseId}</TableCell>
-      <TableCell>{r.incidentDate}</TableCell>
-      <TableCell>{r.incidentLocation}</TableCell>
-      <TableCell>{getStatusBadge(r.caseStatus)}</TableCell>
-      <TableCell>
-        <Dialog>
+  const renderPoliceReportRow = (r: PoliceReport) => {
+    const handleViewDetails = () => {
+      router.push(`/police-reports?caseId=${r.caseId}`)
+    }
+    return (
+      <TableRow key={r.caseId}>
+        <TableCell>{r.caseId}</TableCell>
+        <TableCell>{r.incidentDate}</TableCell>
+        <TableCell>{r.incidentLocation}</TableCell>
+        <TableCell>{getStatusBadge(r.caseStatus)}</TableCell>
+        <TableCell>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -118,39 +124,15 @@ export default function CasesResult({ cases, policeReports, docType }: CasesResu
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DialogTrigger asChild>
-                <DropdownMenuItem>
-                  <Eye className="mr-2 h-4 w-4" /> View Details
-                </DropdownMenuItem>
-              </DialogTrigger>
+              <DropdownMenuItem onClick={handleViewDetails}>
+                <Eye className="mr-2 h-4 w-4" /> View Details
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <DialogContent className="sm:max-w-[625px]">
-            <DialogHeader>
-              <DialogTitle>Report Details: {r.caseId}</DialogTitle>
-              <DialogDescription>Full details for report {r.caseId}.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-               <div className="grid grid-cols-2 gap-4">
-                    <div className="font-semibold">Case ID:</div>
-                    <div>{r.caseId}</div>
-                    <div className="font-semibold">Incident Date:</div>
-                    <div>{r.incidentDate}</div>
-                    <div className="font-semibold">Report Date:</div>
-                    <div>{r.reportDate}</div>
-                    <div className="font-semibold">Location:</div>
-                    <div>{r.incidentLocation}</div>
-                    <div className="font-semibold">Type of Violence:</div>
-                    <div>{r.typeOfViolence}</div>
-                     <div className="font-semibold">Case Status:</div>
-                    <div>{getStatusBadge(r.caseStatus)}</div>
-               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </TableCell>
-    </TableRow>
-  )
+        </TableCell>
+      </TableRow>
+    )
+  }
 
   return (
     <Card>

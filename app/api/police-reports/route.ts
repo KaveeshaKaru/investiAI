@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import {
-  createPoliceReport,
+  upsertPoliceReport,
   getAllPoliceReports,
   searchPoliceReports,
   getPoliceReportsByStatus,
@@ -9,7 +9,7 @@ import {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const report = await createPoliceReport(body);
+    const report = await upsertPoliceReport(body);
     return NextResponse.json(report, { status: 201 });
   } catch (error: any) {
     return NextResponse.json(
