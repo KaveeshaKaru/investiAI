@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
 import CasesResult from "./cases-result"
@@ -263,12 +262,6 @@ export default function DocumentUploader() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-gray-100">
-          <TabsTrigger value="upload">Upload Files</TabsTrigger>
-          <TabsTrigger value="url">From URL</TabsTrigger>
-        </TabsList>
-        <TabsContent value="upload" className="mt-4">
           <Card className="bg-white border-gray-200">
             <CardHeader>
               <CardTitle className="text-gray-900">Document Upload</CardTitle>
@@ -394,36 +387,6 @@ export default function DocumentUploader() {
               </Button>
             </CardFooter>
           </Card>
-        </TabsContent>
-        <TabsContent value="url" className="mt-4">
-          <Card className="bg-white border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Import from URL</CardTitle>
-              <CardDescription className="text-gray-600">
-                Enter the URL of the document you want to process
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid gap-2">
-                  <label htmlFor="url" className="text-sm font-medium text-gray-700">
-                    Document URL
-                  </label>
-                  <input
-                    id="url"
-                    type="url"
-                    placeholder="https://example.com/document.pdf"
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="border-t border-gray-200 pt-6">
-              <Button className="ml-auto bg-blue-600 text-white hover:bg-blue-700">Process URL</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-      </Tabs>
       {(extractedData.courtOrders.length > 0 || extractedData.policeReports.length > 0) && (
         <div className="mt-6">
           <CasesResult cases={extractedData.courtOrders} policeReports={extractedData.policeReports} docType={docType} />
