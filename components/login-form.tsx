@@ -25,7 +25,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
           </div>
           <Input id="password" type="password" required />
         </div>
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full bg-[#5e17eb] hover:bg-[#4b13bc]">
           Login
         </Button>
         <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
